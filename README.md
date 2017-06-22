@@ -1,0 +1,2 @@
+# python-exasol
+Python API
