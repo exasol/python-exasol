@@ -21,7 +21,7 @@ extends PyODBC in two main aspects:
    table. Please read the Python help of exasol.createScript() function for
    more details and read the documentation below.
    
-## Status
+
 
 
 ## Getting started   
@@ -38,7 +38,9 @@ extends PyODBC in two main aspects:
    recommended but not required.
 
 4. Install the EXASolution Python package using the following command:
-   > python setup.py install
+``` 
+python setup.py install
+```
 
 To get more information, use the python `help` function on the
 package.
