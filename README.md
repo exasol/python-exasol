@@ -40,7 +40,7 @@ extends PyODBC in two main aspects:
 4. Install the EXASolution Python package using the following command:
    > python setup.py install
 
-To get more information, use the python ``help'' function on the
+To get more information, use the python `help` function on the
 package.
 
 
@@ -62,31 +62,33 @@ help(E)
 
 ### Connecting to EXASolution
 
-The ``E.connect'' function has the same arguments, like
-``pyodbc.connect'', with some additions. Please refer the PyODBC
+The `E.connect` function has the same arguments, like
+`pyodbc.connect`, with some additions. Please refer the PyODBC
 documentation for connection parameters. To use it with EXASolution,
 following arguments are possible:
 
+
+Assuming you have a DSN pointing to your database instance you can connect like this:
 ```
-#Assuming you have a DSN pointing to your database instance you can connect like this:
-
 C = E.connect(dsn='YourDSN')
+```
 
-#Alternatively if you don't have a DSN you can also specify the required information in the connection string:
-
+Alternatively if you don't have a DSN you can also specify the required information in the connection string:
+```
 C = E.connect(Driver = 'libexaodbc-uo2214.so',
 ...               EXAHOST = 'exahost:8563',
 ...               EXAUID = 'sys',
 ...               EXAPWD = 'exasol)
-
-#The resulting object supports ``with'' statement, so the ``C.close'' function is called automatically on leaving the scope.
 ```
+
+The resulting object supports `with` statement, so the `C.close` function is called automatically on leaving the scope.
+
 
 
 ### Executing queries
 
 The connection object has along with all PyODBC methods also a
-``readData'' method, which executes the query through PyODBC but
+`readData` method, which executes the query through PyODBC but
 receive the resulting data faster and in different formats. Currently
 supported are Pandas and CSV, but it is possible to define arbitrary
 reader functions. This function will be called inside of readData
@@ -119,26 +121,26 @@ C = E.connect(dsn="YourDSN", useCSV=True)
 
 
 ### Write data to database
-```
-#With the function ``C.writeData'' python data can be transferred to EXASolution database:
 
+With the function ``C.writeData'' python data can be transferred to EXASolution database:
+```
 C.writeData(R, table = 'mytable')
 ```
 
 The data will be simply appended to the given table.
 Similar to readData, the default format is a pandas data frame, which
 can be changed using the writeCallback parameter or the explicit version:
-
->>> C.writeCSV(R, table = 'mytable')
-
+```
+C.writeCSV(R, table = 'mytable')
+```
 
 
 ### Using User Defined Functions
 
 With the function decorator ``createScript'' it is possible, to
 declare python functions as EXASolution UDF scripts:
-
->>>  @C.createScript(inArgs = [('a', E.INT)],
+```
+@C.createScript(inArgs = [('a', E.INT)],
 ...                  outArgs = [('b', E.INT), ('c', E.INT)])
 ...  def testScript(data):
 ...      print "process data", repr(ftplib)
@@ -146,15 +148,17 @@ declare python functions as EXASolution UDF scripts:
 ...          data.emit(data.a, data.a + 3)
 ...          if not data.next(): break
 ...      print "all data processed"
+```
 
 This script will be immediatly created on the EXASolution database as
-a UDF script and the local ``testScript'' function will be
-replaced with a ``C.readData'' call, so that to execute the computation
+a UDF script and the local `testScript` function will be
+replaced with a `C.readData` call, so that to execute the computation
 on EXASolution you call this function simply as follows:
+```
+testScript('columnA', table = 'testTable', groupBy = 'columnB')
+```
 
->>> testScript('columnA', table = 'testTable', groupBy = 'columnB')
-
-This call executes a ``SELECT'' SQL query using the ``C.readData'' function
+This call executes a `SELECT` SQL query using the `C.readData` function
 and returns the result. The query will group by columnB and aggregate on
 the columnA column using the testScript function.
 
@@ -162,10 +166,10 @@ Per default, functions are created as SET EMITS UDFs. We recommend to read the
 EXASolution manual about UDF scripts for a better understanding.
 
 Internally the decorated function will be compiled and serialized with
-the ``marshall'' Python module locally and created on the EXASolution
+the `marshall` Python module locally and created on the EXASolution
 side, so that this function has no access to the local environment
 anymore. To initialize the environment, it is possible to pass the
-``initFunction'' argument of the decorator, which initializes the
+`initFunction` argument of the decorator, which initializes the
 environment on the EXASolution side. It happens every time the module
 is loaded, so that this function is recreated in the database on
 module loading.
