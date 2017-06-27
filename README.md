@@ -39,9 +39,14 @@ extends PyODBC in two main aspects:
 
 4. Install the EXASolution Python package using the following command:
 ``` 
-python setup.py install
+python setup.py install --prefix=<path_to_install_location>
 ```
 
+5. Set environment variable and start python
+```
+export LD_LIBRARY_PATH=<path_to_odbc_installation>/lib
+PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python
+```
 To get more information, use the python `help` function on the
 package.
 
@@ -175,6 +180,3 @@ anymore. To initialize the environment, it is possible to pass the
 environment on the EXASolution side. It happens every time the module
 is loaded, so that this function is recreated in the database on
 module loading.
-
-
-
