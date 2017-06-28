@@ -18,7 +18,7 @@ before_install:
     # install EXAODBC
     - wget https://www.exasol.com/support/secure/attachment/38806/EXASOL_ODBC-5.0.13.tar.gz
     - tar -xzf EXASOL_ODBC-5.0.13.tar.gz
-    - ./EXASOL_ODBC-5.0.13.tar.gz/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+    - ./EXASOL_ODBC-5.0.13.tar.gz/config_odbc --mode=config --host=213.95.157.20..24:8563 --user=PUB1351 --password=pbFKDM9g3
 
     # download conda
     - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
