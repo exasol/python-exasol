@@ -9,7 +9,7 @@ env:
     global:
 	- EXAODBC_URL = https://www.exasol.com/support/secure/attachment/38806/
 	- EXAODBC_DRV_FILE = EXASOL_ODBC-5.0.13
-	- secure: EXAHOST = 5.0: 213.95.157.20..24:8563
+	- secure: EXAHOST = 213.95.157.20..24:8563
 	- secure: EXAUSER = PUB1351
 	- secure: EXAPW = pbFKDM9g3
 
