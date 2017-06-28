@@ -36,5 +36,6 @@ script:
     - python tests/selftest.py
     - python tests/data_exchange.py
     - python tests/udf_sdk.py
+    - python tests/test.py
     - ./tests/pylint.sh
 
