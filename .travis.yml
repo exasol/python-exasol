@@ -1,18 +1,41 @@
 language: python
 
 python:
-    - "2.6"
     - "2.7"
 
 sudo: false
 
+env:
+    global:
+	- EXAODBC_URL = https://www.exasol.com/support/secure/attachment/38806/
+	- EXAODBC_DRV_FILE = EXASOL_ODBC-5.0.13
+	- secure: EXAHOST = 5.0: 213.95.157.20..24:8563
+	- secure: EXAUSER = PUB1351
+	- secure: EXAPW = pbFKDM9g3
+
 warnings_are_errors: false
 
+before_install:
+    # install EXAODBC
+    - wget $EXAODBC_URL$EXAODBC_DRV_FILE".tar.gz"
+    - tar -xzf $EXAODBC_DRV_FILE".tar.gz"
+    - ./$EXAODBC_DRV_FILE/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+
+    # download conda
+    - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    - conda create -n conda_env python
+    - source active conda_env
+   
+install:
+    - pip install pyodbc
+    - pip install unittest
+    - bash Miniconda2-latest-Linux-x86_64.sh
+    - conda install pandas 
+
 script:
-    python tests/test.py 
-
-
-
-
-
+    - python tests/test.py 
+    - python tests/selftest.py
+    - python tests/data_exchange.py
+    - python tests/udf_sdk.py
+    - ./tests/pylint.sh
 
