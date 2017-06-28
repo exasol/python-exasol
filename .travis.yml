@@ -1,17 +1,16 @@
 language: python
 
 python:
-    - "2.7"
+    - 2.7
 
 sudo: false
 
 env:
-    global:
-	- EXAODBC_URL = https://www.exasol.com/support/secure/attachment/38806/
-	- EXAODBC_DRV_FILE = EXASOL_ODBC-5.0.13
-	- secure: EXAHOST = 213.95.157.20..24:8563
-	- secure: EXAUSER = PUB1351
-	- secure: EXAPW = pbFKDM9g3
+    - EXAODBC_URL = https://www.exasol.com/support/secure/attachment/38806/
+    - EXAODBC_DRV_FILE = EXASOL_ODBC-5.0.13
+    - secure: EXAHOST = 213.95.157.20..24:8563
+    - secure: EXAUSER = PUB1351
+    - secure: EXAPW = pbFKDM9g3
 
 warnings_are_errors: false
 
