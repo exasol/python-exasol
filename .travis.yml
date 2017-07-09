@@ -37,7 +37,7 @@ install:
     
     # install EXAODBC
     - tar -xzf EXASOL_ODBC-5.0.13.tar.gz
-    - ./XASolution_ODBC-5.0.13/config_odbc --mode=config $HOME/exasol_odbc --host=213.95.157.20..24:8563 --user=PUB1351 --password=pbFKDM9g3 --force
+    - ./EXASolution_ODBC-5.0.13/config_odbc --mode=config $HOME/exasol_odbc --host=213.95.157.20..24:8563 --user=PUB1351 --password=pbFKDM9g3 --force
     
     #install conda und pandas
     - conda create -n conda_env python
