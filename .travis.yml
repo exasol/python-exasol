@@ -5,19 +5,24 @@ python:
 
 sudo: false
 
-env:
-  global:
-    - secure: EXAHOST=213.95.157.20..24:8563 EXAUSER=PUB1351 EXAPW=pbFKDM9g3
-    - EXAODBC=EXASOL_ODBC-6.0.2
-    - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
-#https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
-
 warnings_are_errors: false
 
 addons:
   apt:
     packages:
       - unixodbc-dev
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+    
+env:
+  global:
+    - secure: EXAHOST=213.95.157.21:8563 EXAUSER=PUB1351 EXAPW=pbFKDM9g3
+    - EXAODBC=EXASOL_ODBC-6.0.2
+    - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
+    #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
 
 before_install:
     # get unixODBC
@@ -27,12 +32,12 @@ before_install:
     - get $EXAODBC_URL$EXAODBC".tar.gz"
 
     # get conda
-    - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    #- wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 
    
 install:
     - pip install pyodbc
-    - pip install unittest
+    - pip install pandas
     
     # install unixodbc
     #- tar -xzf unixODBC-2.3.4.tar.gz
@@ -42,13 +47,13 @@ install:
     
     # install EXAODBC
     - tar -xzf $EXAODBC".tar.gz"
-- ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+    - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
     
     #install conda und pandas
-    - conda create -n conda_env python
-    - source active conda_env
-    - bash Miniconda2-latest-Linux-x86_64.sh -b -p $HOME/miniconda
-    - conda install pandas 
+    #- conda create -n conda_env python
+    #- source active conda_env
+    #- bash Miniconda2-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+    #- conda install pandas 
     
     # install py sdk
     - python setup.py --prefix=$HOME/exa_py
