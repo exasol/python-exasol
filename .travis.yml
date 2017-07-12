@@ -56,7 +56,7 @@ install:
     #- conda install pandas 
     
     # install py sdk
-    - python setup.py #--prefix=$HOME/exa_py
+    - python setup.py install --prefix=$HOME/exa_py
 
 script:
     - python tests/test.py 
