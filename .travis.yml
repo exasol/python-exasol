@@ -22,6 +22,7 @@ env:
     - secure: EXAHOST=213.95.157.21:8563 EXAUSER=PUB1351 EXAPW=pbFKDM9g3
     - EXAODBC=EXASOL_ODBC-6.0.2
     - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
+    - PYTHONPATH = $HOME/exa_py/lib/python2.7/site-packages
     #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
 
 before_install:
