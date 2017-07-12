@@ -22,7 +22,6 @@ env:
     - secure: EXAHOST=213.95.157.21:8563 EXAUSER=PUB1351 EXAPW=pbFKDM9g3
     - EXAODBC=EXASOL_ODBC-6.0.2
     - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
-    #- PYTHONPATH = $HOME/exa_py/lib/python2.7/site-packages
     #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
 
 before_install:
@@ -62,6 +61,6 @@ install:
 script:
     - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/test.py 
     - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/selftest.py
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packagespython tests/data_exchange.py
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packagespython tests/udf_sdk.py
+    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/data_exchange.py
+    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/udf_sdk.py
     - ./tests/pylint.sh
