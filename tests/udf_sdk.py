@@ -15,7 +15,8 @@ from cStringIO import StringIO
 
 sys.path.append('/buckets/testsystem')
 
-import portreg.client
+if 'SGE_NODES' in os.environ:
+        import portreg.client
 
 import pyodbc
 import pandas
