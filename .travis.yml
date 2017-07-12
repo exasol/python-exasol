@@ -27,7 +27,7 @@ env:
 
 before_install:
     # get unixODBC
-    #- wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
+    - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
     
     # get EXAODBC    
     - wget $EXAODBC_URL$EXAODBC".tar.gz"
@@ -41,10 +41,10 @@ install:
     - pip install pandas
     
     # install unixodbc
-    #- tar -xzf unixODBC-2.3.4.tar.gz
-    #- ./unixODBC-2.3.4/configure --prefix=$HOME/unixodbc
-    #- make
-    #- make install
+    - tar -xzf unixODBC-2.3.4.tar.gz
+    - ./unixODBC-2.3.4/configure --prefix=$HOME/unixodbc
+    - make
+    - make install
     
     # install EXAODBC
     - tar -xzf $EXAODBC".tar.gz"
