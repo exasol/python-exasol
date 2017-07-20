@@ -16,7 +16,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.odbc_kwargs = {
-                'Driver': os.environ['ODBC_DRIVER'],
+                #'Driver': os.environ['ODBC_DRIVER'],
                 'EXAHOST': os.environ['ODBC_HOST'],
                 'EXAUID': 'sys',
                 'EXAPWD': 'exasol',
