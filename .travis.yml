@@ -23,9 +23,16 @@ env:
     - secure: ODBC_HOST=213.95.157.21:8563 ODBC_DRIVER=$HOME/EXASOL_ODBC-6.0.2/lib/linux/x86_64/libexaodbc-uo2214lv2.so
     - EXAODBC=EXASOL_ODBC-6.0.2
     - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
+    - ODBCINI=$HOME
+    - ODBCINSTINI=$HOME
+    - ODBCSYSINI=$HOME
     #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
 
 before_install:
+
+    # move odbcinst.ini to home
+    - cp test/odbcinst.ini $HOME
+    
     # get unixODBC
     - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
     
