@@ -31,7 +31,7 @@ env:
 before_install:
 
     # move odbcinst.ini to home
-    - cp test/odbcinst.ini $HOME
+    - cp tests/odbcinst.ini $HOME
     
     # get unixODBC
     - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
