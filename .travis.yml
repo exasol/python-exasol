@@ -60,8 +60,8 @@ install:
     - python setup.py install --prefix=$HOME/exa_py
 
 script:
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/test.py 
+    #- PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/test.py 
     - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/selftest.py
     - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/data_exchange.py
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/udf_sdk.py
-    - ./tests/pylint.sh
+    #- PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/udf_sdk.py
+    #- ./tests/pylint.sh
