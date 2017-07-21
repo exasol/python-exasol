@@ -33,7 +33,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.odbc_kwargs = {
-                'DSN'='EXAODBC_TEST',
+                #'DSN':'EXAODBC_TEST',
                 'Driver': 'EXAODBC',
                 'EXAHOST': os.environ['ODBC_HOST'],
                 'EXAUID': 'sys',
