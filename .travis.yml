@@ -20,7 +20,7 @@ notifications:
 env:
   global:
     - secure: EXAHOST=213.95.157.21:8563 EXAUSER=PUB1351 EXAPW=pbFKDM9g3
-    - secure: ODBC_HOST=213.95.157.21:8563 ODBC_DRIVER=$HOME/EXASOL_ODBC-6.0.2/lib/linux/x86_64/libexaodbc-uo2214lv2.so
+    - secure: ODBC_HOST=213.95.157.21:8563 #ODBC_DRIVER=$HOME/EXASOL_ODBC-6.0.2/lib/linux/x86_64/libexaodbc-uo2214lv2.so
     - EXAODBC=EXASOL_ODBC-6.0.2
     - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
     - ODBCINI=$HOME/odbc.ini
