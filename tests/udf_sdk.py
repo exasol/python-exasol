@@ -36,8 +36,8 @@ class TestCase(unittest.TestCase):
                 #'DSN':'EXAODBC_TEST',
                 'Driver': 'EXAODBC',
                 'EXAHOST': os.environ['ODBC_HOST'],
-                'EXAUID': 'sys',
-                'EXAPWD': 'exasol',
+                'EXAUID': os.environ['EXAUSER'],
+                'EXAPWD': os.environ['EXAPW']
                 }
         if 'ODBC_LOG' in os.environ:
             self.odbc_kwargs['LOGFILE'] = os.environ['ODBC_LOG']
