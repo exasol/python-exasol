@@ -30,12 +30,11 @@ extends PyODBC in two main aspects:
 
 1. Make sure you have ODBC and EXASolution ODBC installed and configured on
    your system. We recommend to create a DSN pointing to your database
-   instance. Read the README of the EXASolution ODBC driver package for details.
+   instance. Read the [README](https://www.exasol.com/portal/display/DOWNLOAD/6.0) of the EXASolution ODBC driver package for details.
 
 2. Install a recent version of the PyODBC package.
 
-3. Recommended: Install a recent version of the Pandas package, which is
-   recommended but not required.
+3. Install a recent version of the Pandas package.
 
 4. Install the EXASolution Python package using the following command:
 ``` 
