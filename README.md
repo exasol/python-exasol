@@ -45,6 +45,8 @@ python setup.py install --prefix=<path_to_install_location>
 5. Set environment variable and start python
 ```
 export LD_LIBRARY_PATH=<path_to_odbc_installation>/lib
+export export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
+export ODBCSYSINI=<path_to_the_directory_with_odbc_ini>
 PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python
 ```
 To get more information, use the python `help` function on the
