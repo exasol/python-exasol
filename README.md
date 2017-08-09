@@ -171,7 +171,7 @@ and returns the result. The query will group by columnB and aggregate on
 the columnA column using the testScript function.
 
 Per default, functions are created as SET EMITS UDFs. We recommend to read the
-EXASolution manual about UDF scripts for a better understanding.
+[EXASolution manual](https://www.exasol.com/portal/display/DOC/User+Manual+6.0) about UDF scripts for a better understanding.
 
 Internally the decorated function will be compiled and serialized with
 the `marshall` Python module locally and created on the EXASolution
