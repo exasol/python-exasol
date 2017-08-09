@@ -85,7 +85,7 @@ Alternatively if you don't have a DSN you can also specify the required informat
 C = E.connect(Driver = 'libexaodbc-uo2214.so',
 ...               EXAHOST = 'exahost:8563',
 ...               EXAUID = 'sys',
-...               EXAPWD = 'exasol)
+...               EXAPWD = 'exasol')
 ```
 
 The resulting object supports `with` statement, so the `C.close` function is called automatically on leaving the scope.
