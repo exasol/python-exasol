@@ -31,7 +31,7 @@ extends PyODBC in two main aspects:
 1. Make sure you have unixODBC installed. You can download it [here](http://www.unixodbc.org/download.html)
 
 2. Install EXASolution ODBC and configure it on your system. We recommand you to create a DSN pointing to your database instance. EXASolution ODBC can be downloaded [here](https://www.exasol.com/portal/display/DOWNLOAD/6.0).
-   instance. Read the [README](https://www.exasol.com/portal/display/DOWNLOAD/6.0) of the EXASolution ODBC driver package for details.
+   instance. Read the README.txt of the EXASolution ODBC driver package for details.
 
 3. Install a recent version of the PyODBC package.
 ```
@@ -46,7 +46,7 @@ pip install pandas
 5. Install the EXASolution Python package 
 Clone or download the EXASolution Python package repository. Then execute the following command:
 ``` 
-python setup.py install --prefix=<path_to_install_location>
+python setup.py install --prefix=<path_to_python_package_installation_location>
 ```
 
 6. Set environment variable and start python
@@ -54,13 +54,12 @@ python setup.py install --prefix=<path_to_install_location>
 export LD_LIBRARY_PATH=<path_to_unix_odbc_installation>/lib
 export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
 export ODBCSYSINI=<path_to_the_directory_with_odbc_ini>
-PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python
 ```
 
 7. start python
 start python by using the EXASolution Python package which ypi installed in step 5
 ```
-PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python 
+PYTHONPATH=<path_to_python_package_installation_location>/lib/python2.7/site-packages python 
 ```
 
 
