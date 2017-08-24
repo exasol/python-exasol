@@ -28,29 +28,40 @@ extends PyODBC in two main aspects:
    
 ### Prerequisites and Installation
 
-1. Make sure you have ODBC and EXASolution ODBC installed and configured on
-   your system. We recommend to create a DSN pointing to your database
+1. Make sure you have unixODBC installed. You can download it [here](http://www.unixodbc.org/download.html)
+
+2. Install EXASolution ODBC and configure it on your system. We recommand you to create a DSN pointing to your database instance. EXASolution ODBC can be downloaded [here](https://www.exasol.com/portal/display/DOWNLOAD/6.0).
    instance. Read the [README](https://www.exasol.com/portal/display/DOWNLOAD/6.0) of the EXASolution ODBC driver package for details.
 
-2. Install a recent version of the PyODBC package.
+3. Install a recent version of the PyODBC package.
+```
+pip install pyodbc
+```
 
-3. Install a recent version of the Pandas package.
+4. Install a recent version of the Pandas package.
+```
+pip install pandas
+```
 
-4. Install the EXASolution Python package using the following command:
+5. Install the EXASolution Python package 
+Clone or download the EXASolution Python package repository. Then execute the following command:
 ``` 
 python setup.py install --prefix=<path_to_install_location>
 ```
 
-5. Set environment variable and start python
+6. Set environment variable and start python
 ```
 export LD_LIBRARY_PATH=<path_to_odbc_installation>/lib
 export export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
 export ODBCSYSINI=<path_to_the_directory_with_odbc_ini>
 PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python
 ```
-To get more information, use the python `help` function on the
-package.
 
+7. start python
+start python by using the EXASolution Python package which ypi installed in step 5
+```
+PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python 
+```
 
 
 ### Importing the package
@@ -106,6 +117,7 @@ as CSV.
 To use this function call it with the SQL:
 ```
 R = C.readData("SELECT * FROM MYTABLE")
+print(R)
 ```
 
 The result type is a Pandas data frame per default. You can use a 
@@ -114,11 +126,13 @@ example you can use the predefined csvReadCallback to receive the
 results formatted as CSV:
 ```
 R = C.readData("SELECT * FROM MYTABLE", readCallback = E.csvReadCallback)
+print(R)
 ```
 
 We also offer an explicit function to read as CSV:
 ```
 R = C.readCSV("SELECT * FROM MYTABLE")
+print(R)
 ```
 
 You can also change the default return type to CSV for the whole
@@ -132,7 +146,12 @@ C = E.connect(dsn="YourDSN", useCSV=True)
 
 With the function ``C.writeData'' python data can be transferred to EXASolution database:
 ```
+import pandas as pd
+
+R = C.readData("SELECT * FROM MYTABLE")
+df = pd.DataFrame(R)
 C.writeData(R, table = 'mytable')
+print(R)
 ```
 
 The data will be simply appended to the given table.
