@@ -51,8 +51,8 @@ python setup.py install --prefix=<path_to_install_location>
 
 6. Set environment variable and start python
 ```
-export LD_LIBRARY_PATH=<path_to_odbc_installation>/lib
-export export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
+export LD_LIBRARY_PATH=<path_to_unix_odbc_installation>/lib
+export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
 export ODBCSYSINI=<path_to_the_directory_with_odbc_ini>
 PYTHONPATH=<path_to_install_location>/lib/python2.7/site-packages python
 ```
@@ -144,7 +144,7 @@ C = E.connect(dsn="YourDSN", useCSV=True)
 
 ### Write data to database
 
-With the function ``C.writeData'' python data can be transferred to EXASolution database:
+With the function "C.writeData" python data can be transferred to EXASolution database. R stores the content of MYTABLE and is then transferred to a pandas dataframe. By calling the function "C.writeData" the content of MYTABLE will saved in R in form of pandas dataframe.
 ```
 import pandas as pd
 
