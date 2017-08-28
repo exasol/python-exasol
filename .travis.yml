@@ -1,0 +1,63 @@
+language: python
+
+python:
+    - 2.7
+
+sudo: false
+
+warnings_are_errors: false
+
+addons:
+  apt:
+    packages:
+      - unixodbc-dev
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+    
+env:
+  global:
+    - EXAODBC=EXASOL_ODBC-6.0.2
+    - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
+    - ODBCINI=$HOME/odbc.ini
+    - ODBCSYSINI=$HOME
+    #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
+
+before_install:
+
+    # move odbcinst.ini to home
+    - yes | cp -rf tests/odbcinst.ini $HOME
+    - yes | cp -rf tests/odbc.ini $HOME
+    
+    # get unixODBC
+    - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
+    
+    # get EXAODBC    
+    - wget $EXAODBC_URL$EXAODBC".tar.gz"
+   
+install:
+    - pip install pyodbc
+    - pip install pandas
+    
+    # install unixodbc
+    - tar -xzf unixODBC-2.3.4.tar.gz
+    - ./unixODBC-2.3.4/configure --prefix=$HOME/unixodbc
+    - make
+    - make install
+    
+    # install EXAODBC
+    - tar -xzf $EXAODBC".tar.gz"
+    - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+    
+    # install py sdk
+    - python setup.py install --prefix=$HOME/exa_py
+
+script:
+    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/selftest.py
+    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/data_exchange.py
+    
+    # udf sdk test and pylint deactivated due to privilege of trail account and toolbox
+    #- PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/udf_sdk.py
+    #- ./tests/pylint.sh
