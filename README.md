@@ -198,4 +198,4 @@ anymore. To initialize the environment, it is possible to pass the
 `initFunction` argument of the decorator, which initializes the
 environment on the EXASolution side. It happens every time the module
 is loaded, so that this function is recreated in the database on
-module loading.
+module loading. 
