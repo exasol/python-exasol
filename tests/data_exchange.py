@@ -25,6 +25,20 @@ class TestCase(unittest.TestCase):
         if 'ODBC_LOG' in os.environ:
             self.odbc_kwargs['LOGFILE'] = os.environ['ODBC_LOG']
 
+	with exasol.connect(**self.odbc_kwargs) as ecn:
+	    crs = ecn.cursor()
+    	    crs.execute('OPEN SCHEMA exasol_travis_python')
+	    crs.execute('CREATE TABLE data_exchange_table (decimal1 DECIMAL)')
+	    for i in range(0, 1000):
+		rdm = random.shuffle()
+		crs.execute('INSERT INTO data_exchange_table VALUES %s', rdm)
+
+    def tearDown(self):
+	with exasol.connect(**self.odbc_kwargs) as ecn:
+            crs = ecn.cursor()
+            crs.execute('OPEN SCHEMA exasol_travis_python')
+            crs.execute('DROP TABLE data_exchange_table')
+
 
 class ODBCOnlyTest(TestCase):
     def test_connect_disconnect(self):
