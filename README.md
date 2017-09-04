@@ -1,6 +1,6 @@
 # EXASolution Python Package
 
-[![Build Status](https://travis-ci.org/EXASOL/python-exasol)](https://travis-ci.org/EXASOL/python-exasol)
+[![Build Status](https://travis-ci.org/EXASOL/python-exasol.svg)](https://travis-ci.org/EXASOL/python-exasol)
 
 ###### Please note that this is an open source project which is officially supported by EXASOL. For any question, you can contact our support team.
 
