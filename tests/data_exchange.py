@@ -68,93 +68,82 @@ class ODBCOnlyTest(TestCase):
 
 
 class CSVTest(TestCase):
-    @unittest.skip('test.enginetable not found')
     def test_readCSV_gets_all_rows(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
-            rows = ecn.readCSV('SELECT decimal1 FROM test.enginetable')
-            self.assertEqual(5000, len(rows))
+            rows = ecn.readCSV('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
+            self.assertEqual(1000, len(rows))
 
-    @unittest.skip('test.enginetable not found')
     def test_readCSV_returns_a_list_of_lists(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
-            rows = ecn.readCSV('SELECT decimal1 FROM test.enginetable')
+            rows = ecn.readCSV('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
             self.assertIsInstance(rows, list)
             self.assertIsInstance(rows[0], list)
     
-    @unittest.skip('test.enginetable not found')
     def test_readCSV_gets_plausible_data(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             crs = ecn.cursor()
-            crs.execute('SELECT sum(decimal1) FROM test.enginetable')
+            crs.execute('SELECT sum(decimal1) FROM exasol_travis_python.data_exchange_table')
             sum_ = crs.fetchone()[0]
-            rows = ecn.readCSV('SELECT decimal1 FROM test.enginetable')
+            rows = ecn.readCSV('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
         self.assertEqual(sum_,
                 reduce(operator.add, [Decimal(row[0]) for row in rows if len(row)]))
 
-    @unittest.skip('insufficient privileges for creating schema')
     def test_writeCSV_works(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             c = ecn.cursor()
-            try:
-                c.execute('DROP SCHEMA foo')
-            except pyodbc.ProgrammingError:
-                pass
-            c.execute('CREATE SCHEMA foo')
+	    c.execute('OPEN SCHEMA exasol_travis_python')
+	    c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
             ecn.writeCSV([[1,2], [3, 4]], 'T')
 
-            rows = c.execute('SELECT * FROM foo.t').fetchall()
+            rows = c.execute('SELECT * FROM exasol_travis_python.t').fetchall()
             self.assertEqual(2, len(rows))
             row0 = [x for x in rows[0]]
             row1 = [x for x in rows[1]]
             expected = sorted([row0, row1])
             result = sorted([[Decimal(1), Decimal(2)], [Decimal(3), Decimal(4)]])
+	    c.execute('DROP TABLE exasol_travos_python.t')
             self.assertEqual(expected, result)
 
 
 class PandasTest(TestCase):
-    @unittest.skip('test.enginetable not found')
     def test_readPandas_gets_all_rows(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
-            rows = ecn.readPandas('SELECT decimal1 FROM test.enginetable')
-            self.assertEqual(5000, len(rows))
+            rows = ecn.readPandas('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
+            self.assertEqual(1000, len(rows))
 
-    @unittest.skip('test.enginetable not found')
     def test_readPandas_returns_a_dataframe(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
-            rows = ecn.readPandas('SELECT decimal1 FROM test.enginetable')
+            rows = ecn.readPandas('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
             self.assertIsInstance(rows, pandas.DataFrame)
 
-    @unittest.skip('test.enginetable not found')
     def test_readPandas_gets_plausible_data(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             crs = ecn.cursor()
-            crs.execute('SELECT sum(decimal1) FROM test.enginetable')
+            crs.execute('SELECT sum(decimal1) FROM exasol_travis_python.data_exchange_table')
             sum_ = crs.fetchone()[0]
-            rows = ecn.readPandas('SELECT decimal1 FROM test.enginetable')
+            rows = ecn.readPandas('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
         self.assertAlmostEqual(float(sum_), float(rows.sum()))
 
     @unittest.skip('insufficient privileges for creating schema')
     def test_writePandas_works(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             c = ecn.cursor()
-            try:
-                c.execute('DROP SCHEMA foo')
-            except pyodbc.ProgrammingError:
-                pass
-            c.execute('CREATE SCHEMA foo')
+	    c.execute('OPEN SCHEMA exasol_travis_python')
+	    c.execute('DROP TABLE IF EXISTS exasol_travis_python.t')
             c.execute('CREATE TABLE T (x INT, y VARCHAR(10))')
             
             # numpy arrays are transposed:
             data = pandas.DataFrame({1: [1,2], 2: ["a","b"]})
             ecn.writePandas(data, 'T')
 
-            rows = c.execute('SELECT * FROM foo.t').fetchall()
+            rows = c.execute('SELECT * FROM exasol_travis_python.t').fetchall()
             self.assertEqual(2, len(rows))
             row0 = [x for x in rows[0]]
             row1 = [x for x in rows[1]]
             expected = sorted([row0, row1])
             result = sorted([[Decimal(1), "a"], [Decimal(2), "b"]])
+	    c.execute('DROP TABLE exasol_travis_python.t')
             self.assertEqual(expected, result)
 
 
@@ -175,47 +164,38 @@ class DefaultsTest(TestCase):
                     readCallback=exasol.csvReadCallback)
             self.assertIsInstance(rows, list, rows.__class__)
         
-    @unittest.skip('insufficient privileges for creating schema')
     def test_writeData_defaults_to_pandas(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             c = ecn.cursor()
-            try:
-                c.execute('DROP SCHEMA foo')
-            except pyodbc.ProgrammingError:
-                pass
-            c.execute('CREATE SCHEMA foo')
+            c.execute('OPEN SCHEMA exasol_travis_python')
+	    c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
     
             #with self.assertRaisesRegexp(AttributeError, r"object has no attribute 'to_csv'"):
             with self.assertRaises(TypeError):
                 ecn.writeData([[1,2], [3, 4]], 'T')
+	    c.execute('DROP TABLE exasol_travis_python.t')
 
-    @unittest.skip('insufficient privileges for creating schema')
     def test_writeData_set_default_with_connect(self):
         with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
             c = ecn.cursor()
-            try:
-                c.execute('DROP SCHEMA foo')
-            except pyodbc.ProgrammingError:
-                pass
-            c.execute('CREATE SCHEMA foo')
+            c.execute('OPEN SCHEMA exasol_travis_python')
+	    c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
 
             ecn.writeData([[1,2], [3, 4]], 'T')
+	    c.execute('DROP TABLE T')
         
-    @unittest.skip('insufficient privileges for creating schema')
     def test_writeData_overwrite_default(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             c = ecn.cursor()
-            try:
-                c.execute('DROP SCHEMA foo')
-            except pyodbc.ProgrammingError:
-                pass
-            c.execute('CREATE SCHEMA foo')
+	    c.execute('OPEN SCHEMA exasol_travis_python')
+            c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
 
             ecn.writeData([[1,2], [3, 4]], 'T',
                     writeCallback=exasol.csvWriteCallback)
+	    c.execute('DROP TABLE T')
         
 if __name__ == '__main__':
     unittest.main(verbosity=2)
