@@ -4,6 +4,7 @@ import operator
 import os
 import socket
 import unittest
+import random
 from decimal import Decimal
 
 import pyodbc
@@ -28,16 +29,19 @@ class TestCase(unittest.TestCase):
 	with exasol.connect(**self.odbc_kwargs) as ecn:
 	    crs = ecn.cursor()
     	    crs.execute('OPEN SCHEMA exasol_travis_python')
+	    crs.execute('DROP TABLE IF EXISTS data_exchange_table')
 	    crs.execute('CREATE TABLE data_exchange_table (decimal1 DECIMAL)')
-	    for i in range(0, 1000):
-		rdm = random.shuffle()
-		crs.execute('INSERT INTO data_exchange_table VALUES %s', rdm)
+	    for i in range(0, 50):
+		rdm = random.random()
+		crs.execute('INSERT INTO data_exchange_table VALUES {}'.format(rdm))
+	    crs.commit()
 
     def tearDown(self):
 	with exasol.connect(**self.odbc_kwargs) as ecn:
             crs = ecn.cursor()
             crs.execute('OPEN SCHEMA exasol_travis_python')
             crs.execute('DROP TABLE data_exchange_table')
+	    crs.commit()
 
 
 class ODBCOnlyTest(TestCase):
@@ -71,7 +75,7 @@ class CSVTest(TestCase):
     def test_readCSV_gets_all_rows(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             rows = ecn.readCSV('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
-            self.assertEqual(1000, len(rows))
+            self.assertEqual(50, len(rows))
 
     def test_readCSV_returns_a_list_of_lists(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
@@ -102,7 +106,7 @@ class CSVTest(TestCase):
             row1 = [x for x in rows[1]]
             expected = sorted([row0, row1])
             result = sorted([[Decimal(1), Decimal(2)], [Decimal(3), Decimal(4)]])
-	    c.execute('DROP TABLE exasol_travos_python.t')
+	    c.execute('DROP TABLE exasol_travis_python.t')
             self.assertEqual(expected, result)
 
 
@@ -110,7 +114,7 @@ class PandasTest(TestCase):
     def test_readPandas_gets_all_rows(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             rows = ecn.readPandas('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
-            self.assertEqual(1000, len(rows))
+            self.assertEqual(50, len(rows))
 
     def test_readPandas_returns_a_dataframe(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
@@ -125,7 +129,6 @@ class PandasTest(TestCase):
             rows = ecn.readPandas('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
         self.assertAlmostEqual(float(sum_), float(rows.sum()))
 
-    @unittest.skip('insufficient privileges for creating schema')
     def test_writePandas_works(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             c = ecn.cursor()
