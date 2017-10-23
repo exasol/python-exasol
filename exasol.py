@@ -176,9 +176,9 @@ import socket, struct, marshal, zlib
 import asyncore, asynchat, csv
 #import traceback, time
 
-from SocketServer import TCPServer
+from socketserver import TCPServer
 from threading import Thread, Lock, Event
-from BaseHTTPServer import BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler
 
 __author__ = 'EXASOL AG <support@exasol.com>'
 __version__ = '6.0.1'
@@ -219,16 +219,16 @@ __all__ = (
     'outputService',
     )
 
-if sys.version_info < (2,4) or sys.version_info >= (2,8):
-    print sys.version_info, sys.version_info < (2,4), sys.version_info >= (2,8)
-    raise RuntimeError("This package requires at least Python 2.4 and does not support Python 3.x")
+if sys.version_info <= (3,0):
+    print(sys.version_info, sys.version_info <= (3,0))
+    raise RuntimeError("This package requires at least Python 3.0 and does not support Python 2.x")
 
 class TunneledTCPServer(TCPServer):
     def server_bind(self):
         self.socket.connect(self.server_address)
         self.socket.sendall(struct.pack("iii", 0x02212102, 1, 1))
         _, self.proxyPort, host = struct.unpack("ii16s", self.socket.recv(24))
-        self.proxyHost = host.replace('\x00', '')
+        self.proxyHost = host.replace('\x00'.encode('utf-8'), ''.encode('utf-8'))
     def handle_timeout(self): self.gotTimeout = True
     def server_activate(self): pass
     def get_request(self):
@@ -250,8 +250,8 @@ class HTTPIOHandler(BaseHTTPRequestHandler):
                 self.server.pipeOut.close()
                 break
             data = self.rfile.read(chunklen)
-            self.server.pipeOut.write(data)
-            if self.rfile.read(2) != '\r\n':
+            self.server.pipeOut.write(data.decode('utf-8'))
+            if self.rfile.read(2) != b'\r\n':
                 self.server.pipeOut.close()
                 self.server.error = RuntimeError('Got wrong chunk delimiter in HTTP')
                 break
@@ -269,7 +269,7 @@ class HTTPIOHandler(BaseHTTPRequestHandler):
             while True:
                 data = self.server.pipeIn.read(65535)
                 if data is None or len(data) == 0: break
-                self.wfile.write(data)
+                self.wfile.write(data.encode('utf-8'))
                 self.wfile.flush()
         finally: self.server.doneEvent.set()
 
@@ -286,7 +286,7 @@ class HTTPIOServerThread(Thread):
                         self.srv.pipeOut.close()
                     break
                 if not self.srv.gotTimeout: break
-        except Exception, err:
+        except Exception as err:
             #traceback.print_exc()
             self.srv.error = err
 
@@ -295,8 +295,9 @@ class HTTPExportQueryThread(Thread):
         try:
             fname = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(32)) + '.csv'
             self.odbc.execute("""EXPORT (%s) INTO CSV AT 'http://%s:%d' FILE '%s' WITH COLUMN NAMES""" % \
-                              (self.sqlCommand, self.srv.proxyHost, self.srv.proxyPort, fname))
-        except Exception, err:
+                              (self.sqlCommand, self.srv.proxyHost.decode('utf-8'),
+                               self.srv.proxyPort, fname))
+        except Exception as err:
             #traceback.print_exc()
             self.srv.error = err
 
@@ -308,8 +309,9 @@ class HTTPImportQueryThread(Thread):
             if self.columnNames:
                 columnNames = "(%s)" % ", ".join(self.columnNames)
             self.odbc.execute("""IMPORT INTO %s%s FROM CSV AT 'http://%s:%d' FILE '%s'""" % \
-                              (self.tableName, columnNames, self.srv.proxyHost, self.srv.proxyPort, fname))
-        except Exception, err:
+                              (self.tableName, columnNames, self.srv.proxyHost.decode('utf-8'),
+                               self.srv.proxyPort, fname))
+        except Exception as err:
             #traceback.print_exc()
             self.srv.error = err
 
@@ -563,6 +565,7 @@ but has the following additions:
             srv = TunneledTCPServer(self.serverAddress, HTTPIOHandler)
             srv.pipeInFd, srv.pipeOutFd = os.pipe(); srv.outputMode = True
             srv.error, srv.pipeIn, srv.pipeOut = None, os.fdopen(srv.pipeInFd), os.fdopen(srv.pipeOutFd, 'w')
+            srv.error = None
             s = HTTPIOServerThread();    s.srv = srv; srv.serverThread = s
             q = HTTPExportQueryThread(); q.srv = srv; srv.queryThread = q
             q.sqlCommand = sqlCommand
@@ -572,7 +575,7 @@ but has the following additions:
             try:
                 try:
                     ret = readCallback(s.srv.pipeIn, **kw)
-                except Exception, err:
+                except Exception as err:
                     if srv.error is not None:
                         raise srv.error
                     #traceback.print_exc()
@@ -643,7 +646,7 @@ but has the following additions:
                             srv.doneEvent.set()
                             raise RuntimeError("Server error")
                     ret = writeCallback(data, srv.pipeOut, **kw)
-                except Exception, err:
+                except Exception as err:
                     if srv.error is not None:
                         raise srv.error
                     #traceback.print_exc()
@@ -776,9 +779,9 @@ but has the following additions:
         def createPythonScript(function):
             if name is None:
                 if self.scriptSchema is None:
-                    scriptName = function.func_name
+                    scriptName = function.__name__
                 else: scriptName = "%s.%s" % (self.scriptSchema,
-                                              function.func_name)
+                                              function.__name__)
             else: scriptName = name
             if qi: scriptName = '"%s"' % scriptName
             scriptCode = ["# AUTO GENERATED CODE FROM EXASOLUTION PYTHON PACKAGE"]
@@ -787,12 +790,12 @@ but has the following additions:
                 scriptCode.append("env = marshal.loads(zlib.decompress(%s))" % \
                                   repr(zlib.compress(marshal.dumps(env), 9)))
             scriptCode.append("run = types.FunctionType(marshal.loads(zlib.decompress(%s)), globals(), %s)" % \
-                              (repr(zlib.compress(marshal.dumps(function.func_code), 9)),
-                               repr(function.func_name)))
+                              (repr(zlib.compress(marshal.dumps(function.__code__), 9)),
+                               repr(function.__name__)))
             if cleanFunction is not None:
                 scriptCode.append("cleanup = types.FunctionType(marshal.loads(zlib.decompress(%s)), globals(), %s)" % \
-                                  (repr(zlib.compress(marshal.dumps(cleanFunction.func_code), 9)),
-                                   repr(cleanFunction.func_name)))
+                                  (repr(zlib.compress(marshal.dumps(cleanFunction.__code__), 9)),
+                                   repr(cleanFunction.__name__)))
 
             if self._outputService is not None or self.externalClient:
                 serverAddress = self.clientAddress
@@ -810,8 +813,8 @@ activate_remote_output(%s)""" % repr(serverAddress))
 
             if initFunction is not None:
                 scriptCode.append("types.FunctionType(marshal.loads(%s), globals(), %s)()" % \
-                                  (repr(marshal.dumps(initFunction.func_code)),
-                                   repr(initFunction.func_name)))
+                                  (repr(marshal.dumps(initFunction.__code__)),
+                                   repr(initFunction.__name__)))
             scriptCode = "\n".join(scriptCode)
             scriptReplace = ""
             if replaceScript:
@@ -820,7 +823,7 @@ activate_remote_output(%s)""" % repr(serverAddress))
             if inType == SCALAR:
                 scriptInType = "SCALAR"
 
-            if not isinstance(inArgs, basestring):
+            if not isinstance(inArgs, str):
                 scriptInArgs = []
                 for n,t in inArgs:
                     scriptInArgs.append("%s %s" % (self._q(n, qi), t))
@@ -828,11 +831,11 @@ activate_remote_output(%s)""" % repr(serverAddress))
             else: scriptInArgs = inArgs
 
             if outType == RETURNS:
-                if not isinstance(outArgs, basestring):
+                if not isinstance(outArgs, str):
                     raise TypeError("outArgs need te be a string for outType == RETURNS")
                 scriptOutArgs = outArgs
             else:
-                if not isinstance(outArgs, basestring):
+                if not isinstance(outArgs, str):
                     scriptOutArgs = []
                     for n,t in outArgs:
                         scriptOutArgs.append("%s %s" % (self._q(n, qi), t))
@@ -873,7 +876,7 @@ activate_remote_output(%s)""" % repr(serverAddress))
                        (scriptName, ", ".join(funargs), self._q(table, qis), whereSQL, groupBySQL, str(restQuery))
                 if returnSQL: return '(%s)' % code
                 return self.readData(code, **kw)
-            f.func_name = function.func_name
+            f.__name__ = function.__name__
             return f
         return createPythonScript
 
@@ -914,7 +917,7 @@ def outputService():
     server.fileObject = sys.stdout
     server.finished = False
     server.init()
-    print ">>> bind the output server to %s:%d" % server.serverAddress
+    print(">>> bind the output server to %s:%d" % server.serverAddress)
     sys.stdout.flush()
     try: server.run()
     except KeyboardInterrupt:
