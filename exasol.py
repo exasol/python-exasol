@@ -98,8 +98,8 @@ To use this function call it with the SQL:
 
 >>> R = C.readData("SELECT * FROM MYTABLE")
 
-The result type is a Pandas data frame per default. You can use a 
-different callback function using the argument readCallback, for 
+The result type is a Pandas data frame per default. You can use a
+different callback function using the argument readCallback, for
 example you can use the predefined csvReadCallback to receive the
 results formatted as CSV:
 >>> R = C.readData("SELECT * FROM MYTABLE", readCallback = E.csvReadCallback)
