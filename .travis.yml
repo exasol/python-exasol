@@ -27,7 +27,7 @@ env:
 
 before_install:
     # test docker
-    docker run --detach --privileged --stop-timeout 120  exasol/docker-db:latest
+    - docker run --detach --privileged --stop-timeout 120  exasol/docker-db:latest
 
     # move odbcinst.ini to home
     - yes | cp -rf tests/odbcinst.ini $HOME
