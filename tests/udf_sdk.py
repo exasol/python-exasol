@@ -11,7 +11,6 @@ import unittest
 
 from decimal import Decimal
 from textwrap import dedent
-from cStringIO import StringIO
 
 sys.path.append('/buckets/testsystem')
 
@@ -23,9 +22,15 @@ import pandas
 
 import exasol
 from exasol import (
+        PY3,
         SET, EMITS, RETURNS, SCALAR,
         INT, DECIMAL, DOUBLE, CHAR, VARCHAR,
         )
+
+if PY3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 
 class TestCase(unittest.TestCase):
@@ -317,7 +322,7 @@ class OutputService(TestCase):
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
@@ -335,7 +340,7 @@ class OutputService(TestCase):
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
@@ -380,6 +385,11 @@ class ExecBackground(threading.Thread):
 
 
 class ExternalOutputService(TestCase):
+
+    if not PY3:
+        def assertRegexp(self, *args, **kwds):
+            return self.assertRegex(*args, **kwds)
+
     def setUp(self):
         super(self.__class__, self).setUp()
         self.script_kwargs = {
@@ -398,20 +408,19 @@ class ExternalOutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
-
     def test_start_external_service_given_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
         eos.start()
         time.sleep(10)
         eos.stop()
-        self.assertRegexpMatches(eos.output, r'bind .* to .*:%d' % self.port)
+        self.assertRegex(eos.output, r'bind .* to .*:%d' % self.port)
 
     def test_start_external_service_any_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port=0')
         eos.start()
         time.sleep(10)
         eos.stop()
-        self.assertRegexpMatches(eos.output, r'bind .* to .*:')
+        self.assertRegex(eos.output, r'bind .* to .*:')
         self.assertNotRegexpMatches(eos.output, r'bind .* to .*:0')
 
     def xtest_start_external_service_get_data(self):
@@ -429,7 +438,7 @@ class ExternalOutputService(TestCase):
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')

@@ -10,15 +10,20 @@ from decimal import Decimal
 import pyodbc
 import pandas
 
+from exasol import PY3
 import exasol
+
+if PY3:
+    from functools import reduce
+
 
 class TestCase(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
         self.odbc_kwargs = {
-                #'DSN': 'EXAODBC_TEST',
-                'Driver': 'EXAODBC',
+                'DSN': 'EXAODBC_TEST',
+                # 'Driver': 'EXAODBC',
                 'EXAHOST': os.environ['ODBC_HOST'],
                 'EXAUID': os.environ['EXAUSER'],
                 'EXAPWD': os.environ['EXAPW']
