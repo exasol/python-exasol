@@ -28,6 +28,7 @@ env:
 before_install:
     # test docker
     - docker run --detach --name exasol --privileged --stop-timeout 120  exasol/docker-db:latest
+    - docker exec -it exasol dwad_client list
     - docker inspect exasol
 
     # move odbcinst.ini to home
