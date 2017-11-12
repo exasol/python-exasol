@@ -177,7 +177,7 @@ class DefaultsTest(TestCase):
             #with self.assertRaisesRegexp(AttributeError, r"object has no attribute 'to_csv'"):
             with self.assertRaises(TypeError):
                 ecn.writeData([[1,2], [3, 4]], 'T')
-        c.execute('DROP TABLE exasol_travis_python.t')
+            c.execute('DROP TABLE exasol_travis_python.t')
 
     def test_writeData_set_default_with_connect(self):
         with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
@@ -187,7 +187,7 @@ class DefaultsTest(TestCase):
             c.execute('CREATE TABLE T (x INT, y INT)')
 
             ecn.writeData([[1,2], [3, 4]], 'T')
-        c.execute('DROP TABLE T')
+            c.execute('DROP TABLE T')
 
     def test_writeData_overwrite_default(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
@@ -198,7 +198,7 @@ class DefaultsTest(TestCase):
 
             ecn.writeData([[1,2], [3, 4]], 'T',
                     writeCallback=exasol.csvWriteCallback)
-        c.execute('DROP TABLE T')
+            c.execute('DROP TABLE T')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
