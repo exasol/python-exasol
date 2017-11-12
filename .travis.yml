@@ -26,12 +26,16 @@ env:
     - EXAODBC_URL=https://www.exasol.com/support/secure/attachment/52896/
     - ODBCINI=$HOME/odbc.ini
     - ODBCSYSINI=$HOME
+    - EXAHOST="127.0.0.1:8899"
+    - EXAUSER="sys"
+    - EXAPW="exasol"
+    - ODBC_HOST="127.0.0.1:8899"
     #https://www.exasol.com/support/secure/attachment/52896/EXASOL_ODBC-6.0.2.tar.gz
 
 before_install:
     # test docker
     - docker run --detach --name exasol --privileged -p 127.0.0.1:8899:8888 --stop-timeout 120 exasol/docker-db:latest
-    - sleep 60
+    - sleep 120
     - docker exec -it exasol dwad_client list
     - docker inspect exasol
 
@@ -57,8 +61,8 @@ install:
     
     # install EXAODBC
     - tar -xzf $EXAODBC".tar.gz"
-    - ./$EXAODBC/config_odbc --mode=config --host="127.0.0.1:8899" --user=sys --password=exasol
-    #- ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+    - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
+    #- ./$EXAODBC/config_odbc --mode=config --host="127.0.0.1:8899" --user=sys --password=exasol
     
     # install py sdk
     - python setup.py install --prefix=$HOME/exa_py
