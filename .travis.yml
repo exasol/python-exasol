@@ -40,7 +40,7 @@ before_install:
     - docker inspect exasol
 
     # move write odbc inis to home
-    - tests/write-odbc-ini-in-home.sh "$TRAVIS_BUILD_DIR/EXASOL_ODBC-6.0.2"
+    - ./tests/write-odbc-ini-in-home.sh "$TRAVIS_BUILD_DIR/EXASOL_ODBC-6.0.2"
     #- yes | cp -rf tests/odbcinst.ini $HOME
     #- yes | cp -rf tests/odbc.ini $HOME
     
