@@ -115,7 +115,7 @@ class Defaults(TestCase):
                         script_schema = 'FOO'
                     """)).fetchall()
         self.assertEqual(1, len(rows))
-        
+
 
 class SimpleFunctionality(TestCase):
     def test_createScript_works_set_emits(self):
@@ -169,7 +169,7 @@ class SimpleFunctionality(TestCase):
                     )
             def foobar(ctx):
                 ctx.emit(4)
-            
+
             ecn.commit()
 
         with pyodbc.connect(**self.odbc_kwargs) as con:
@@ -200,11 +200,11 @@ class DataTypes(TestCase):
                     """)).fetchall()
         self.assertIn('("a" %s) EMITS' % type_, rows[0][0])
 
-    
+
     def test_createScript_with_int(self):
         self.create_script(INT)
         self.check_type('DECIMAL(18,0)')
-        
+
     def test_createScript_with_decimal(self):
         self.create_script(DECIMAL(6,4))
         self.check_type('DECIMAL(6,4)')
@@ -212,11 +212,11 @@ class DataTypes(TestCase):
     def test_createScript_with_char(self):
         self.create_script(CHAR(5))
         self.check_type('CHAR(5) UTF8')
-        
+
     def test_createScript_with_varchar(self):
         self.create_script(VARCHAR(20))
         self.check_type('VARCHAR(20) UTF8')
-        
+
 
 class Interface(TestCase):
     def create_script(self, inargs='a', outargs='a'):
@@ -251,23 +251,23 @@ class Interface(TestCase):
     def test_argorder_controllgroup(self):
         self.create_script('a', 'x')
         self.check_typespec('a', 'x')
-        
+
     def test_inArgs_order_1(self):
         self.create_script('abc', 'x')
         self.check_typespec('abc', 'x')
-        
+
     def test_inArgs_order_2(self):
         self.create_script('cab', 'x')
         self.check_typespec('cab', 'x')
-        
+
     def test_outArgs_order_1(self):
         self.create_script('a', 'xyz')
         self.check_typespec('a', 'xyz')
-        
+
     def test_outArgs_order_2(self):
         self.create_script('a', 'zxy')
         self.check_typespec('a', 'zxy')
-    
+
     def test_createScript_local_argorder_args(self):
         with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
             ecn.execute('OPEN SCHEMA foo')
@@ -284,11 +284,11 @@ class Interface(TestCase):
                     )
             def foo(ctx):
                 return 'a=' + str(ctx.a) + '; b=' + str(ctx.b) + '; c=' + str(ctx.c) + '; d=' + str(ctx.d)
-            
+
             result = foo(4.5, 1.3, "'foo'", "'bar'", table='dual')
             self.assertEqual('a=1.3; b=bar; c=4.5; d=foo', result[0][0])
-     
-   
+
+
 class OutputService(TestCase):
     def setUp(self):
         super(self.__class__, self).setUp()
@@ -321,7 +321,7 @@ class OutputService(TestCase):
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
-            
+
         self.assertEqual('no output', out[0][0])
         self.assertIn('foobar', buffer.getvalue())
 
@@ -339,7 +339,7 @@ class OutputService(TestCase):
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
-            
+
         self.assertEqual('no output', out[0][0])
         self.assertIn('foobar', buffer.getvalue())
 
@@ -363,7 +363,7 @@ class ExecBackground(threading.Thread):
         #print 'out:', out
         #print 'err:', err
         with self._lock:
-            self.output = out 
+            self.output = out
 
     def stop(self):
         with self._lock:
@@ -434,13 +434,13 @@ class ExternalOutputService(TestCase):
 
             out = echo("'foobar'", table='dual')
         eos.stop()
-            
+
         self.assertEqual('no output', out[0][0])
         self.assertEqual('', buffer.getvalue())
         self.assertIn('foobar', eos.output)
 
 
-class WithStatement(TestCase):        
+class WithStatement(TestCase):
 
     def test_reraise_correct_exception_without_outputservice(self):
         with self.assertRaises(ZeroDivisionError):
@@ -462,7 +462,7 @@ class WithStatement(TestCase):
             stderr = sys.stderr.getvalue()
             sys.stderr = _sys_stderr
         self.assertNotIn('Traceback', stderr)
-            
+
 
 
 if __name__ == '__main__':
