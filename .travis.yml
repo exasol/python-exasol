@@ -35,14 +35,9 @@ env:
 before_install:
     # test docker
     - docker run --detach --name exasol --privileged -p 127.0.0.1:8899:8888 --stop-timeout 120 exasol/docker-db:latest
-    - sleep 120
-    - docker exec -it exasol dwad_client list
-    - docker inspect exasol
 
     # move write odbc inis to home
     - ./tests/write-odbc-ini-in-home.sh "$TRAVIS_BUILD_DIR/EXASOL_ODBC-6.0.2"
-    #- yes | cp -rf tests/odbcinst.ini $HOME
-    #- yes | cp -rf tests/odbc.ini $HOME
     
     # get unixODBC
     - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
@@ -59,11 +54,15 @@ install:
     - ./unixODBC-2.3.4/configure --prefix=$HOME/unixodbc
     - make
     - make install
-    
+
+    # sleep a bit to ensure that Docker is running (can be refactored to be more intelligent in future)
+    - sleep 60
+    - docker exec -it exasol dwad_client list  # just for the log
+    - docker inspect exasol  # just for the log
+
     # install EXAODBC
     - tar -xzf $EXAODBC".tar.gz"
     - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
-    #- ./$EXAODBC/config_odbc --mode=config --host="127.0.0.1:8899" --user=sys --password=exasol
     
     # install py sdk
     - python setup.py install --prefix=$HOME/exa_py
