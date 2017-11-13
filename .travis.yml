@@ -39,9 +39,10 @@ before_install:
     - docker exec -it exasol dwad_client list
     - docker inspect exasol
 
-    # move odbcinst.ini to home
-    - yes | cp -rf tests/odbcinst.ini $HOME
-    - yes | cp -rf tests/odbc.ini $HOME
+    # move write odbc inis to home
+    - tests/write-odbc-ini-in-home.sh "$TRAVIS_BUILD_DIR/EXASOL_ODBC-6.0.2"
+    #- yes | cp -rf tests/odbcinst.ini $HOME
+    #- yes | cp -rf tests/odbc.ini $HOME
     
     # get unixODBC
     - wget www.unixodbc.org/unixODBC-2.3.4.tar.gz
