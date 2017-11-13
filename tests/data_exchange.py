@@ -28,7 +28,7 @@ class TestCase(unittest.TestCase):
 
         with exasol.connect(**self.odbc_kwargs) as ecn:
             crs = ecn.cursor()
-            crs.execute('OPEN SCHEMA exasol_travis_python')
+            crs.execute('CREATE SCHEMA IF NOT EXISTS exasol_travis_python')
             crs.execute('DROP TABLE IF EXISTS data_exchange_table')
             crs.execute('CREATE TABLE data_exchange_table (decimal1 DECIMAL)')
             for i in range(0, 50):
@@ -204,3 +204,4 @@ if __name__ == '__main__':
     unittest.main(verbosity=2)
 
 # vim: ts=4:sts=4:sw=4:et:fdm=indent
+
