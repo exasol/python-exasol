@@ -613,9 +613,9 @@ but has the following additions:
                     raise err
             finally:
                 srv.server_close()
-                try: srv.pipeIn.close()
-                except: pass
                 try: srv.pipeOut.close()
+                except: pass
+                try: srv.pipeIn.close()
                 except: pass
                 q.join(); s.join()
         finally: self.odbc = odbc
@@ -681,11 +681,11 @@ but has the following additions:
                     if srv.error is not None:
                         raise srv.error
                     #traceback.print_exc()
-                    try: srv.pipeIn.close()
+                    try: srv.pipeOut.close()
                     except: pass
                     raise err
             finally:
-                try: srv.pipeOut.close()
+                try: srv.pipeIn.close()
                 except: pass
                 srv.doneEvent.wait()
                 srv.server_close()
