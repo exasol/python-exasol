@@ -615,8 +615,8 @@ but has the following additions:
                 srv.server_close()
                 try: srv.pipeOut.close()
                 except: pass
-                except: pass
                 try: srv.pipeIn.close()
+                except: pass
                 q.join(); s.join()
         finally: self.odbc = odbc
         if srv.error is not None:
