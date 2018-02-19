@@ -292,6 +292,7 @@ class HTTPIOHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.server.startedEvent.set()
             while True:
+                if self.server.pipeIn.closed: break
                 data = self.server.pipeIn.read(65535)
                 if data is None or len(data) == 0: break
                 if PY3:
