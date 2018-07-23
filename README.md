@@ -22,13 +22,13 @@ extends PyODBC in two main aspects:
    in parallel on different groups of data in an EXASolution
    table. Please read the Python help of exasol.createScript() function for
    more details and read the documentation below.
-   
+
 
 
 
 ## Getting started   
-   
-### Prerequisites and Installation
+
+### Prerequisites and Installation on Unix environment
 
 1. Make sure you have unixODBC installed. You can download it [here](http://www.unixodbc.org/download.html)
 
@@ -45,9 +45,9 @@ pip install pyodbc
 pip install pandas
 ```
 
-5. Install the EXASolution Python package 
+5. Install the EXASolution Python package
 Clone or download the EXASolution Python package repository. Then execute the following command:
-``` 
+```
 python setup.py install --prefix=<path_to_python_package_installation_location>
 ```
 
@@ -58,10 +58,46 @@ export ODBCINI=<path_to_the_directory_with_odbc_ini>/odbc.ini
 export ODBCSYSINI=<path_to_the_directory_with_odbc_ini>
 ```
 
-7. start python
-start python by using the EXASolution Python package which ypi installed in step 5
+7. Start python by using the EXASolution Python package which you installed in step 5
 ```
-PYTHONPATH=<path_to_python_package_installation_location>/lib/python2.7/site-packages python 
+PYTHONPATH=<path_to_python_package_installation_location>/lib/python2.7/site-packages python
+```
+### Prerequisites and Installation on Windows
+
+
+1. Make sure you have the Exasol ODBC driver installed. You can download it [on the Exasol website](https://www.exasol.com/portal/display/DOWNLOAD/).
+On the webpage, select a main version on the left side, e.g. 6.0. Scroll down to the section `Download ODBC Driver` and download the corresponding msi, eihter x86 or x86_64. Install it on your system. Press the windows-key and type in `ODBC`. Then select ODBC-Datasources (64 Bit) or ODBC-Datasources (32 Bit), depending on the driver you just installed.
+![Image of dialogue](doku_resources/ODBC-Datasource.png)
+Click on `Add` and select EXASolution Driver.
+Fill out the given form (see picture). Remember the name you give to your datasource
+![Image of configuration](doku_resources/ODBC-Configuration.png)
+
+2. Install a recent version of the PyODBC package.
+```
+pip install pyodbc
+```
+
+3. Install a recent version of the Pandas package.
+```
+pip install pandas
+```
+
+4. Install the EXASolution Python package
+Clone or download the EXASolution Python package repository. Navigate to the folder in your command line. Then execute the following command:
+```
+python setup.py install --prefix=<path_to_python_package_installation_location>
+```
+
+5. Start your python and test the connection:
+```
+import exasol as E
+C = E.connect(dsn='my_exasol')
+R = C.readData("SELECT 'connection works' FROM dual")
+print(R)
+```
+If you get an error like this while testing, you should try the 32 Bit version of the ODBC driver instead
+```
+pyodbc.Error: ('IM014', u'[IM014] [Microsoft][ODBC Driver Manager]
 ```
 
 
@@ -121,8 +157,8 @@ R = C.readData("SELECT * FROM MYTABLE")
 print(R)
 ```
 
-The result type is a Pandas data frame per default. You can use a 
-different callback function using the argument readCallback, for 
+The result type is a Pandas data frame per default. You can use a
+different callback function using the argument readCallback, for
 example you can use the predefined csvReadCallback to receive the
 results formatted as CSV:
 ```
@@ -165,7 +201,7 @@ C.writeCSV(R, table = 'mytable')
 
 ### Using User Defined Functions
 
-With the function decorator ``createScript'' it is possible, to
+With the function decorator ``createScript`` it is possible, to
 declare python functions as EXASolution UDF scripts:
 ```
 @C.createScript(inArgs = [('a', E.INT)],
@@ -200,4 +236,4 @@ anymore. To initialize the environment, it is possible to pass the
 `initFunction` argument of the decorator, which initializes the
 environment on the EXASolution side. It happens every time the module
 is loaded, so that this function is recreated in the database on
-module loading. 
+module loading.
