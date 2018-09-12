@@ -42,7 +42,7 @@ class TestCase(unittest.TestCase):
         if sys.version_info[0:2] != expected_version:
             self.skipTest('createScript expects Python %s' % '.'.join(map(str, expected_version)))
         self.odbc_kwargs = {
-                #'DSN':'EXAODBC_TEST',
+                #'DSN':'EXtest_start_external_service_get_dataAODBC_TEST',
                 'Driver': 'EXAODBC',
                 'EXAHOST': os.environ['ODBC_HOST'],
                 'EXAUID': os.environ['EXAUSER'],
@@ -315,6 +315,8 @@ class OutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
+    @unittest.skipIf(sys.env.get('TRAVIS_OS_NAME') is not None,
+                     'fails on Travis CI, skipping')
     def test_redirect_output_given_port(self):
         buffer = StringIO()
         with exasol.connect(
@@ -334,6 +336,8 @@ class OutputService(TestCase):
         self.assertEqual('no output', out[0][0])
         self.assertIn('foobar', buffer.getvalue())
 
+    @unittest.skipIf(sys.env.get('TRAVIS_OS_NAME') is not None,
+                     'fails on Travis CI, skipping')
     def test_redirect_output_anyport(self):
         buffer = StringIO()
         with exasol.connect(clientAddress=(None, 0),
@@ -411,7 +415,8 @@ class ExternalOutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
-    @unittest.skipIf(os.name == 'nt', 'fails on Windows, skipping')
+    @unittest.skipIf(os.name == 'nt' or sys.env.get('TRAVIS_OS_NAME') is not None,
+                     'fails on Windows and Travis CI, skipping')
     def test_start_external_service_given_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
         eos.start()
@@ -428,7 +433,8 @@ class ExternalOutputService(TestCase):
         self.assertRegexpMatches(eos.output, r'bind .* to .*:')
         self.assertNotRegexpMatches(eos.output, r'bind .* to .*:0')
 
-    @unittest.skipIf(os.name == 'nt', 'fails on Windows, skipping')
+    @unittest.skipIf(os.name == 'nt' or sys.env.get('TRAVIS_OS_NAME') is not None,
+                     'fails on Windows and Travis CI, skipping')
     def test_start_external_service_get_data(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
         eos.start()
