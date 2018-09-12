@@ -1,8 +1,7 @@
-'''Test of executeSQL with CSV'''
+"""Test of executeSQL with CSV"""
 
 import os
 import signal
-import socket
 import subprocess
 import sys
 import threading
@@ -11,27 +10,37 @@ import unittest
 
 from decimal import Decimal
 from textwrap import dedent
-from cStringIO import StringIO
+
+if sys.version_info[0] == 2:
+    from cStringIO import StringIO
+else:
+    from io import StringIO
 
 sys.path.append('/buckets/testsystem')
 
 if 'SGE_NODES' in os.environ:
-        import portreg.client
+    import portreg.client
 
 import pyodbc
 import pandas
 
 import exasol
 from exasol import (
-        SET, EMITS, RETURNS, SCALAR,
+        RETURNS, SCALAR,
         INT, DECIMAL, DOUBLE, CHAR, VARCHAR,
+        expected_version
         )
+
+if os.name == 'nt':
+    signal.SIGKILL = signal.SIGTERM
 
 
 class TestCase(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
+        if sys.version_info[0:2] != expected_version:
+            self.skipTest('createScript expects Python %s' % '.'.join(map(str, expected_version)))
         self.odbc_kwargs = {
                 #'DSN':'EXAODBC_TEST',
                 'Driver': 'EXAODBC',
@@ -85,13 +94,13 @@ class Defaults(TestCase):
 
             self.assertIsInstance(
                     foo(3.4, table='dual',
-                            readCallback=exasol.csvReadCallback),
+                        readCallback=exasol.csvReadCallback),
                     list)
 
     def test_createScript_schema_default(self):
         with exasol.connect(scriptSchema='foo', **self.odbc_kwargs) as ecn:
             @ecn.createScript(inArgs=[('a', INT)], outArgs=[('a', INT)])
-            def bar(ctx):
+            def bar(_):
                 pass
 
             rows = ecn.cursor().execute(dedent("""\
@@ -105,7 +114,7 @@ class Defaults(TestCase):
     def test_createScript_name_overwrites_schema_default(self):
         with exasol.connect(scriptSchema='babelfish', **self.odbc_kwargs) as ecn:
             @ecn.createScript(name='foo.baz', inArgs=[('a', INT)], outArgs=[('a', INT)])
-            def bar(ctx):
+            def bar(_):
                 pass
 
             rows = ecn.cursor().execute(dedent("""\
@@ -152,9 +161,10 @@ class SimpleFunctionality(TestCase):
 
             @ecn.createScript(
                     inArgs=[('a', DOUBLE)],
-                    outArgs=[('a', DECIMAL(10,4))],
+                    outArgs=[('a', DECIMAL(10, 4))],
                     )
             def foo(ctx):
+                import sys
                 ctx.emit(int(ctx.a))
 
             self.assertEqual([['3']], foo(3.4, table='dual'))
@@ -187,7 +197,7 @@ class DataTypes(TestCase):
                     inArgs=[('a', type_)],
                     outArgs=[('a', INT)],
                     )
-            def foo(ctx):
+            def foo(_):
                 pass
             ecn.commit()
 
@@ -200,13 +210,12 @@ class DataTypes(TestCase):
                     """)).fetchall()
         self.assertIn('("a" %s) EMITS' % type_, rows[0][0])
 
-
     def test_createScript_with_int(self):
         self.create_script(INT)
         self.check_type('DECIMAL(18,0)')
 
     def test_createScript_with_decimal(self):
-        self.create_script(DECIMAL(6,4))
+        self.create_script(DECIMAL(6, 4))
         self.check_type('DECIMAL(6,4)')
 
     def test_createScript_with_char(self):
@@ -228,7 +237,7 @@ class Interface(TestCase):
                     inArgs=[(x, DOUBLE) for x in inargs],
                     outArgs=[(x, DOUBLE) for x in outargs],
                     )
-            def foo(ctx):
+            def foo(_):
                 pass
             ecn.commit()
 
@@ -317,7 +326,7 @@ class OutputService(TestCase):
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
@@ -328,20 +337,21 @@ class OutputService(TestCase):
     def test_redirect_output_anyport(self):
         buffer = StringIO()
         with exasol.connect(clientAddress=(None, 0),
-                outputFile=buffer,
-                scriptSchema='foo',
-                useCSV=True,
-                **self.odbc_kwargs) as ecn:
+                            outputFile=buffer,
+                            scriptSchema='foo',
+                            useCSV=True,
+                            **self.odbc_kwargs) as ecn:
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
 
         self.assertEqual('no output', out[0][0])
         self.assertIn('foobar', buffer.getvalue())
+
 
 class ExecBackground(threading.Thread):
     def __init__(self, *cmd):
@@ -360,8 +370,6 @@ class ExecBackground(threading.Thread):
                     stderr=subprocess.STDOUT,
                     )
         out, err = self.child.communicate()
-        #print 'out:', out
-        #print 'err:', err
         with self._lock:
             self.output = out
 
@@ -376,6 +384,11 @@ class ExecBackground(threading.Thread):
             except OSError:
                 # No such process
                 pass
+            except ValueError as err:
+                if os.name == 'nt':
+                    pass
+                else:
+                    raise err
         self.join()
 
 
@@ -398,7 +411,7 @@ class ExternalOutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
-
+    @unittest.skipIf(os.name == 'nt', 'fails on Windows, skipping')
     def test_start_external_service_given_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
         eos.start()
@@ -406,6 +419,7 @@ class ExternalOutputService(TestCase):
         eos.stop()
         self.assertRegexpMatches(eos.output, r'bind .* to .*:%d' % self.port)
 
+    @unittest.skipIf(os.name == 'nt', 'fails on Windows, skipping')
     def test_start_external_service_any_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port=0')
         eos.start()
@@ -414,7 +428,8 @@ class ExternalOutputService(TestCase):
         self.assertRegexpMatches(eos.output, r'bind .* to .*:')
         self.assertNotRegexpMatches(eos.output, r'bind .* to .*:0')
 
-    def xtest_start_external_service_get_data(self):
+    @unittest.skipIf(os.name == 'nt', 'fails on Windows, skipping')
+    def test_start_external_service_get_data(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
         eos.start()
         time.sleep(5)
@@ -429,7 +444,7 @@ class ExternalOutputService(TestCase):
 
             @ecn.createScript(**self.script_kwargs)
             def echo(ctx):
-                print ctx.a
+                print(ctx.a)
                 return 'no output'
 
             out = echo("'foobar'", table='dual')
@@ -444,25 +459,118 @@ class WithStatement(TestCase):
 
     def test_reraise_correct_exception_without_outputservice(self):
         with self.assertRaises(ZeroDivisionError):
-            with exasol.connect(**self.odbc_kwargs) as ecn:
+            with exasol.connect(**self.odbc_kwargs) as _:
                 raise ZeroDivisionError('Boom!')
 
     def test_reraise_correct_exception_with_outputservice(self):
         with self.assertRaises(ZeroDivisionError):
-            with exasol.connect(clientAddress=(None, 0), **self.odbc_kwargs) as ecn:
+            with exasol.connect(clientAddress=(None, 0), **self.odbc_kwargs) as _:
                 raise ZeroDivisionError('Boom!')
 
     def test_no_exception_in_any_thread(self):
         try:
             _sys_stderr = sys.stderr
             sys.stderr = StringIO()
-            with exasol.connect(clientAddress=(None, 0), **self.odbc_kwargs) as ecn:
+            with exasol.connect(clientAddress=(None, 0), **self.odbc_kwargs) as _:
                 pass
         finally:
             stderr = sys.stderr.getvalue()
             sys.stderr = _sys_stderr
         self.assertNotIn('Traceback', stderr)
 
+
+class VersionCheck(TestCase):
+    def test_python_version(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+
+            @ecn.createScript(inArgs=[('dummy', INT)],
+                              outArgs=[('major', INT), ('minor', INT)])
+            def python_version(dummy):
+                dummy.emit(int(sys.version_info[0]),
+                           int(sys.version_info[1]))
+
+            version = python_version(1, table='dual')
+            self.assertEqual(expected_version[0], int(version[0][0]))
+            self.assertEqual(expected_version[1], int(version[0][1]))
+
+    def test_raise_exception(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+            with self.assertRaises(RuntimeError):
+                @ecn.createScript(inArgs=[('dummy', INT)],
+                                  outArgs=[('major', INT), ('minor', INT)])
+                def python_version(dummy):
+                    dummy.emit(int(sys.version_info[0]),
+                               int(sys.version_info[1]))
+                if sys.version_info[0:2] == expected_version:
+                    raise RuntimeError
+
+
+class RaisesExceptions(TestCase):
+    def test_raises_no_error(self):
+        _sys_stderr = sys.stderr
+        try:
+            sys.stderr = StringIO()
+            with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+                ecn.execute('OPEN SCHEMA foo')
+
+                @ecn.createScript(inArgs=[('dummy', INT)],
+                                  outArgs=[('dummy', INT)])
+                def foo(dummy):
+                    return
+        finally:
+            stderr = sys.stderr.getvalue()
+            sys.stderr = _sys_stderr
+        self.assertEqual(0, len(stderr))
+
+    def test_raise_runtimeerror_outargs(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+            with self.assertRaises(RuntimeError):
+                @ecn.createScript(inArgs=[('dummy', INT)],
+                                  outArgs=[])
+                def foo(dummy):
+                    return
+
+    def test_raise_runtimeerror_outargs_empty_string(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+            with self.assertRaises(RuntimeError):
+                @ecn.createScript(inArgs=[('dummy', INT)],
+                                  outArgs='')
+                def foo(dummy):
+                    return
+
+    def test_raise_runtimeerror_outargs_not_set(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+            with self.assertRaises(RuntimeError):
+                @ecn.createScript(inArgs=[('dummy', INT)])
+                def foo(dummy):
+                    return
+
+    def test_raise_typeerror_outargs(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+            with self.assertRaises(TypeError):
+                @ecn.createScript(inArgs=[('dummy', INT)],
+                                  outArgs=[('out', INT)],
+                                  outType=RETURNS)
+                def foo(dummy):
+                    return
+
+    def test_raise_typeerror_no_table(self):
+        with exasol.connect(useCSV=True, **self.odbc_kwargs) as ecn:
+            ecn.execute('OPEN SCHEMA foo')
+
+            @ecn.createScript(inArgs=[('dummy', INT)],
+                              outArgs=[('dummy', INT)])
+            def foo(dummy):
+                return
+
+            with self.assertRaises(TypeError):
+                foo(42)
 
 
 if __name__ == '__main__':
