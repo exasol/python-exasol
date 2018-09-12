@@ -315,7 +315,7 @@ class OutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
-    @unittest.skipIf(sys.environ.get('TRAVIS_OS_NAME') is not None,
+    @unittest.skipIf(os.environ.get('TRAVIS_OS_NAME') is not None,
                      'fails on Travis CI, skipping')
     def test_redirect_output_given_port(self):
         buffer = StringIO()
@@ -336,7 +336,7 @@ class OutputService(TestCase):
         self.assertEqual('no output', out[0][0])
         self.assertIn('foobar', buffer.getvalue())
 
-    @unittest.skipIf(sys.environ.get('TRAVIS_OS_NAME') is not None,
+    @unittest.skipIf(os.environ.get('TRAVIS_OS_NAME') is not None,
                      'fails on Travis CI, skipping')
     def test_redirect_output_anyport(self):
         buffer = StringIO()
@@ -415,7 +415,7 @@ class ExternalOutputService(TestCase):
         if 'SGE_NODES' in os.environ:
             portreg.client.del_port(self.port)
 
-    @unittest.skipIf(os.name == 'nt' or sys.environ.get('TRAVIS_OS_NAME') is not None,
+    @unittest.skipIf(os.name == 'nt' or os.environ.get('TRAVIS_OS_NAME') is not None,
                      'fails on Windows and Travis CI, skipping')
     def test_start_external_service_given_port(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
@@ -433,7 +433,7 @@ class ExternalOutputService(TestCase):
         self.assertRegexpMatches(eos.output, r'bind .* to .*:')
         self.assertNotRegexpMatches(eos.output, r'bind .* to .*:0')
 
-    @unittest.skipIf(os.name == 'nt' or sys.environ.get('TRAVIS_OS_NAME') is not None,
+    @unittest.skipIf(os.name == 'nt' or os.environ.get('TRAVIS_OS_NAME') is not None,
                      'fails on Windows and Travis CI, skipping')
     def test_start_external_service_get_data(self):
         eos = ExecBackground(self.interpreter, self.exatoolbox, '--port', str(self.port))
