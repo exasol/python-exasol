@@ -73,7 +73,7 @@ install:
     - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
     
     # install py sdk
-    - python setup.py install --prefix=$HOME/exa_py
+    - python setup.py install
 
 script:
     - python tests/selftest.py
