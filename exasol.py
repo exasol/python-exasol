@@ -1,4 +1,4 @@
-'''EXASolution Python Package
+"""EXASolution Python Package
 
 Copyright (c) 2004-2017 EXASOL AG. All rights reserved.
 
@@ -73,10 +73,10 @@ connect like this:
 Alternatively if you don't have a DSN you can also specify the required
 information in the connection string:
 
->>> C = E.connect(Driver = 'libexaodbc-uo2214.so',
-...               EXAHOST = 'exahost:8563',
-...               EXAUID = 'sys',
-...               EXAPWD = 'exasol)
+>>> C = E.connect(Driver='libexaodbc-uo2214.so',
+...               EXAHOST='exahost:8563',
+...               EXAUID='sys',
+...               EXAPWD='exasol')
 
 The resulting object supports ``with'' statement, so the ``C.close''
 function is called automatically on leaving the scope.
@@ -135,16 +135,17 @@ Using User Defined Functions
 With the function decorator ``createScript'' it is possible, to
 declare python functions as EXASolution UDF scripts:
 
->>>  @C.createScript(inArgs = [('a', E.INT)],
-...                  outArgs = [('b', E.INT), ('c', E.INT)])
+>>>  @C.createScript(inArgs=[('a', E.INT)],
+...                  outArgs=[('b', E.INT), ('c', E.INT)])
 ...  def testScript(data):
-...      print "process data", repr(ftplib)
+...      print('process data', repr(ftplib))
 ...      while True:
 ...          data.emit(data.a, data.a + 3)
-...          if not data.next(): break
-...      print "all data processed"
+...          if not data.next():
+...              break
+...      print('all data processed')
 
-This script will be immediatly created on the EXASolution database as
+This script will be immediately created on the EXASolution database as
 a UDF script and the local ``testScript'' function will be
 replaced with a ``C.readData'' call, so that to execute the computation
 on EXASolution you call this function simply as follows:
@@ -169,16 +170,54 @@ module loading.
 
 
 
-'''
+"""
 
-import sys, os, string, random, pyodbc
-import socket, struct, marshal, zlib
-import asyncore, asynchat, csv
-#import traceback, time
+import sys
+import os
+import string
+import random
+import pyodbc
+import socket
+import struct
+import marshal
+import pickle
+import zlib
+import asyncore
+import asynchat
+import csv
+import threading
+import time
 
-from SocketServer import TCPServer
-from threading import Thread, Lock, Event
-from BaseHTTPServer import BaseHTTPRequestHandler
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    from socketserver import TCPServer
+    from http.server import BaseHTTPRequestHandler
+
+    basestring = str
+
+    def get_func_code(f):
+        return f.__code__
+
+    def get_func_name(f):
+        return f.__name__
+
+    def set_func_name(f, name):
+        f.__name__ = name
+else:
+    from SocketServer import TCPServer
+    from BaseHTTPServer import BaseHTTPRequestHandler
+
+    def get_func_code(f):
+        return f.func_code
+
+    def get_func_name(f):
+        return f.func_name
+
+    def set_func_name(f, name):
+        f.func_name = name
+
 
 __author__ = 'EXASOL AG <support@exasol.com>'
 __version__ = '6.0.1'
@@ -189,7 +228,7 @@ SCALAR = "SCALAR"
 EMITS = "EMITS"
 RETURNS = "RETURNS"
 
-DECIMAL = lambda a,b: "DECIMAL(%d,%d)" % (a,b)
+DECIMAL = lambda a, b: "DECIMAL(%d,%d)" % (a, b)
 INT = "INT"
 INTEGER = "INTEGER"
 DOUBLE = "DOUBLE"
@@ -197,6 +236,7 @@ CHAR = lambda a: "CHAR(%d)" % (a)
 VARCHAR = lambda a: "VARCHAR(%d)" % (a)
 DATE = "DATE"
 TIMESTAMP = "TIMESTAMP"
+expected_version = (2, 7)
 
 __all__ = (
     "SET",
@@ -217,46 +257,66 @@ __all__ = (
     'csvReadCallback',
     'csvWriteCallback',
     'outputService',
+    'expected_version'
     )
 
-if sys.version_info < (2,4) or sys.version_info >= (2,8):
-    print sys.version_info, sys.version_info < (2,4), sys.version_info >= (2,8)
-    raise RuntimeError("This package requires at least Python 2.4 and does not support Python 3.x")
+if sys.version_info < (2, 4):
+    raise RuntimeError("This package requires at least Python 2.4")
+
 
 class TunneledTCPServer(TCPServer):
     def server_bind(self):
         self.socket.connect(self.server_address)
         self.socket.sendall(struct.pack("iii", 0x02212102, 1, 1))
         _, self.proxyPort, host = struct.unpack("ii16s", self.socket.recv(24))
+        if PY3:
+            host = host.decode('utf8')
         self.proxyHost = host.replace('\x00', '')
-    def handle_timeout(self): self.gotTimeout = True
-    def server_activate(self): pass
+
+    def handle_timeout(self):
+        self.gotTimeout = True
+
+    def server_activate(self):
+        pass
+
     def get_request(self):
-        #sys.stderr.write('@@@ get request called\n')
-        return (self.socket, self.server_address)
-    def shutdown_request(self, request): pass
-    def close_request(self, request): pass
+        return self.socket, self.server_address
+
+    def shutdown_request(self, request):
+        pass
+
+    def close_request(self, request):
+        pass
+
 
 class HTTPIOHandler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args): pass
+    def log_message(self, format, *args):
+        pass
+
     def do_PUT(self):
-        data = None
         while True:
             line = self.rfile.readline().strip()
-            if len(line) == 0: chunklen = 0
-            else: chunklen = int(line, 16)
+            if len(line) == 0:
+                chunklen = 0
+            else:
+                chunklen = int(line, 16)
             if chunklen == 0:
-                #sys.stderr.write('@@@ got eof, last data: %s\n' % repr(data))
                 self.server.pipeOut.close()
                 break
             data = self.rfile.read(chunklen)
+            if PY3:
+                data = data.decode('utf8')
+                chunk_delimiter = b'\r\n'
+            else:
+                chunk_delimiter = '\r\n'
             self.server.pipeOut.write(data)
-            if self.rfile.read(2) != '\r\n':
+            if self.rfile.read(2) != chunk_delimiter:
                 self.server.pipeOut.close()
                 self.server.error = RuntimeError('Got wrong chunk delimiter in HTTP')
                 break
         self.send_response(200, 'OK')
         self.end_headers()
+
     def do_GET(self):
         try:
             self.protocol_version = 'HTTP/1.1'
@@ -268,14 +328,19 @@ class HTTPIOHandler(BaseHTTPRequestHandler):
             self.server.startedEvent.set()
             while True:
                 data = self.server.pipeIn.read(65535)
-                if data is None or len(data) == 0: break
+                if data is None or len(data) == 0:
+                    break
+                if PY3:
+                    data = bytes(data, 'utf8')
                 self.wfile.write(data)
                 self.wfile.flush()
-        finally: self.server.doneEvent.set()
+        finally:
+            self.server.pipeIn.close()
+            self.server.doneEvent.set()
 
-class HTTPIOServerThread(Thread):
+
+class HTTPIOServerThread(threading.Thread):
     def run(self):
-        #sys.stderr.write('@@@ start server\n')
         try:
             self.srv.timeout = 1
             while True:
@@ -285,35 +350,36 @@ class HTTPIOServerThread(Thread):
                     if self.srv.outputMode:
                         self.srv.pipeOut.close()
                     break
-                if not self.srv.gotTimeout: break
-        except Exception, err:
-            #traceback.print_exc()
+                if not self.srv.gotTimeout:
+                    break
+        except Exception as err:
             self.srv.error = err
 
-class HTTPExportQueryThread(Thread):
+
+class HTTPExportQueryThread(threading.Thread):
     def run(self):
         try:
-            fname = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(32)) + '.csv'
-            self.odbc.execute("""EXPORT (%s) INTO CSV AT 'http://%s:%d' FILE '%s' WITH COLUMN NAMES""" % \
+            fname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32)) + '.csv'
+            self.odbc.execute("""EXPORT (%s) INTO CSV AT 'http://%s:%d' FILE '%s' WITH COLUMN NAMES""" %
                               (self.sqlCommand, self.srv.proxyHost, self.srv.proxyPort, fname))
-        except Exception, err:
-            #traceback.print_exc()
+        except Exception as err:
             self.srv.error = err
 
-class HTTPImportQueryThread(Thread):
+
+class HTTPImportQueryThread(threading.Thread):
     def run(self):
         try:
-            fname = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(32)) + '.csv'
+            fname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32)) + '.csv'
             columnNames = ""
             if self.columnNames:
                 columnNames = "(%s)" % ", ".join(self.columnNames)
-            self.odbc.execute("""IMPORT INTO %s%s FROM CSV AT 'http://%s:%d' FILE '%s'""" % \
+            self.odbc.execute("""IMPORT INTO %s%s FROM CSV AT 'http://%s:%d' FILE '%s'""" %
                               (self.tableName, columnNames, self.srv.proxyHost, self.srv.proxyPort, fname))
-        except Exception, err:
-            #traceback.print_exc()
+        except Exception as err:
             self.srv.error = err
 
-class ScriptOutputThread(Thread):
+
+class ScriptOutputThread(threading.Thread):
     def init(this):
         class log_server(asyncore.dispatcher):
             def __init__(self):
@@ -323,19 +389,23 @@ class ScriptOutputThread(Thread):
                 if this.serverAddress[1] == 0:
                     this.serverAddress = (this.serverAddress[0], self.socket.getsockname()[1])
                 self.listen(10)
+
             def handle_accept(self):
                 log_handler(*self.accept())
+
             def handle_close(self):
                 self.close()
 
         class log_handler(asynchat.async_chat):
             def __init__(self, sock, address):
-                asynchat.async_chat.__init__(self, sock = sock)
+                asynchat.async_chat.__init__(self, sock=sock)
                 self.set_terminator("\n")
                 self.address = "%s:%d" % address
                 self.ibuffer = []
+
             def collect_incoming_data(self, data):
                 self.ibuffer.append(data)
+
             def found_terminator(self):
                 this.fileObject.write("%s> %s\n" % (self.address, ''.join(self.ibuffer).rstrip()))
                 self.ibuffer = []
@@ -345,7 +415,7 @@ class ScriptOutputThread(Thread):
     def run(self):
         try:
             while not self.finished:
-                asyncore.loop(timeout = 1, count = 1)
+                asyncore.loop(timeout=1, count=1)
         finally:
             self.serv.close()
             del self.serv
@@ -355,28 +425,33 @@ class ScriptOutputThread(Thread):
 def pandasReadCallback(inputFile, **kw):
     """Read callback for Pandas data frames"""
     # import only when required
-    global pandas; import pandas  # pylint: disable=F0401
+    import pandas  # pylint: disable=F0401
     return pandas.read_csv(inputFile, skip_blank_lines=False, **kw)
+
 
 def pandasWriteCallback(data, outputFile, **kw):
     """Write callback for Pandas data frames"""
     # import only when required
-    global pandas; import pandas # pylint: disable=F0401
+    import pandas  # pylint: disable=F0401
     if not isinstance(data, pandas.DataFrame):
         raise TypeError("pandas.DataFrame expected as first argument")
-    data.to_csv(outputFile, header = False, index = False, quoting = csv.QUOTE_NONNUMERIC, **kw)
+
+    data.to_csv(outputFile, header=False, index=False, quoting=csv.QUOTE_NONNUMERIC, **kw)
+
 
 def csvReadCallback(inputFile, **kw):
     """Read callback for CSV data"""
-    inputFile.readline() # skip header
-    reader = csv.reader(inputFile, lineterminator = '\n', **kw)
+    inputFile.readline()  # skip header
+    reader = csv.reader(inputFile, lineterminator='\n', **kw)
     return [row for row in reader]
+
 
 def csvWriteCallback(data, outputFile, **kw):
     """Write callback for CSV data"""
-    writer = csv.writer(outputFile, quoting = csv.QUOTE_MINIMAL, lineterminator = '\n', **kw)
+    writer = csv.writer(outputFile, quoting=csv.QUOTE_MINIMAL, lineterminator='\n', **kw)
     for row in data:
         writer.writerow(row)
+
 
 class connect(object):
     """PyODBC compatible Connection class from exasol
@@ -454,30 +529,42 @@ but has the following additions:
                 host = socket.gethostbyname(socket.gethostname())
             self.clientAddress = (str(host), int(port))
             del kw['clientAddress']
-        else: self.clientAddress = None
+        else:
+            self.clientAddress = None
         if 'externalClient' in kw:
             self.externalClient = kw['externalClient']
             del kw['externalClient']
-        else: self.externalClient = False
+        else:
+            self.externalClient = False
         if 'useCSV' in kw:
             self.csvIsDefault = kw['useCSV']
             del kw['useCSV']
-        else: self.csvIsDefault = False
+        else:
+            self.csvIsDefault = False
         if 'serverAddress' in kw:
             host, port = kw['serverAddress']
             self.serverAddress = (str(host), int(port))
             del kw['serverAddress']
-        else: self.serverAddress = None
+        else:
+            self.serverAddress = None
         if 'outputFile' in kw:
             self.outputFileObject = kw['outputFile']
             del kw['outputFile']
-        else: self.outputFileObject = sys.stdout
+        else:
+            self.outputFileObject = sys.stdout
         if 'scriptSchema' in kw:
             self.scriptSchema = kw['scriptSchema']
             del kw['scriptSchema']
-        else: self.scriptSchema = None
+        else:
+            self.scriptSchema = None
 
         self.odbc = pyodbc.connect(*args, **kw)
+        if PY3:
+            self.odbc.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
+            self.odbc.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+            self.odbc.setdecoding(pyodbc.SQL_WMETADATA, encoding='utf-8')
+            self.odbc.setencoding(encoding='utf-8')
+
         if self.serverAddress is None:
             host, port = tuple(self.odbc.getinfo(pyodbc.SQL_SERVER_NAME).split(':'))
             self.serverAddress = (str(host), int(port))
@@ -485,26 +572,32 @@ but has the following additions:
         self.error = None
         self._outputService = None
         self._connected = True
-        if self.clientAddress != None and not self.externalClient:
+        if self.clientAddress is not None and not self.externalClient:
             self._startOutputService()
-        self._outputLock = Lock()
+        self._outputLock = threading.Lock()
         self._q = lambda x, q: q and '"%s"' % str(x).replace('"', '""') or str(x)
 
     def __enter__(self):
         """Allows to use E.connect in "with" statements"""
-        if not self._connected: raise pyodbc.ProgrammingError("Not connected")
+        if not self._connected:
+            raise pyodbc.ProgrammingError("Not connected")
         return self
+
     def __exit__(self, type, value, tb):
-        if not self._connected: return
-        self.close()
+        if self._connected:
+            self.close()
+
     def __getattr__(self, name):
         if name in self.__dict__:
             return self.__dict__[name]
         return getattr(self.__dict__['odbc'], name)
+
     def __del__(self):
         if self._connected:
-            try: self.close()
-            except: pass
+            try:
+                self.close()
+            except:
+                pass
 
     def _startOutputService(self):
         """Start service for EXASolution UDF scripts' output
@@ -516,7 +609,8 @@ but has the following additions:
         The output of this service is the local stdout.
 
         """
-        if not self._connected: raise pyodbc.ProgrammingError("Not connected")
+        if not self._connected:
+            raise pyodbc.ProgrammingError("Not connected")
         self._stopOutputService()
         self._outputService = ScriptOutputThread()
         self._outputService.fileObject = self.outputFileObject
@@ -533,13 +627,15 @@ but has the following additions:
         created with running output service, will not work any more.
 
         """
-        if self._outputService is None: return
+        if self._outputService is None:
+            return
         try:
             self._outputService.finished = True
             self._outputService.join()
-        finally: self._outputService = None
+        finally:
+            self._outputService = None
 
-    def readData(self, sqlCommand, readCallback = None, **kw):
+    def readData(self, sqlCommand, readCallback=None, **kw):
         """Execute a DQL statement and returns the result
 
         This is a optimized version of pyodbc.Connection.execute
@@ -553,38 +649,49 @@ but has the following additions:
             readData function.
 
         """
-        if not self._connected: raise pyodbc.ProgrammingError("Not connected")
+        if not self._connected:
+            raise pyodbc.ProgrammingError("Not connected")
         if readCallback is None:
             if self.csvIsDefault:
                 readCallback = csvReadCallback
-            else: readCallback = pandasReadCallback
-        odbc = self.odbc; self.odbc = None # during command execution is odbc not usable
+            else:
+                readCallback = pandasReadCallback
+        odbc = self.odbc
+        self.odbc = None  # during command execution is odbc not usable
         try:
             srv = TunneledTCPServer(self.serverAddress, HTTPIOHandler)
-            srv.pipeInFd, srv.pipeOutFd = os.pipe(); srv.outputMode = True
+            srv.pipeInFd, srv.pipeOutFd = os.pipe()
+            srv.outputMode = True
             srv.error, srv.pipeIn, srv.pipeOut = None, os.fdopen(srv.pipeInFd), os.fdopen(srv.pipeOutFd, 'w')
-            s = HTTPIOServerThread();    s.srv = srv; srv.serverThread = s
-            q = HTTPExportQueryThread(); q.srv = srv; srv.queryThread = q
+            s = HTTPIOServerThread()
+            s.srv = srv
+            srv.serverThread = s
+            q = HTTPExportQueryThread()
+            q.srv = srv
+            srv.queryThread = q
             q.sqlCommand = sqlCommand
             q.odbc = odbc
-            s.start(); q.start()
+            s.start()
+            q.start()
 
             try:
                 try:
                     ret = readCallback(s.srv.pipeIn, **kw)
-                except Exception, err:
+                except Exception as err:
                     if srv.error is not None:
                         raise srv.error
-                    #traceback.print_exc()
                     raise err
             finally:
                 srv.server_close()
-                try: srv.pipeIn.close()
-                except: pass
-                try: srv.pipeOut.close()
-                except: pass
-                q.join(); s.join()
-        finally: self.odbc = odbc
+                try:
+                    srv.pipeIn.close()
+                    srv.pipeOut.close()
+                except:
+                    pass
+                q.join()
+                s.join()
+        finally:
+            self.odbc = odbc
         if srv.error is not None:
             raise srv.error
         return ret
@@ -600,10 +707,10 @@ but has the following additions:
         return self.readData(*args, **kw)
 
     def writeData(self, data, table,
-                   columnNames = None,
-                   quotedIdentifiers = False,
-                   writeCallback = None,
-                   **kw):
+                  columnNames=None,
+                  quotedIdentifiers=False,
+                  writeCallback=None,
+                  **kw):
         """Import data to a table in EXASolution DBMS
 
         Per default it imports the given pandas data frame to the
@@ -613,54 +720,63 @@ but has the following additions:
         be csv.excel dialect.
 
         """
-        if not self._connected: raise pyodbc.ProgrammingError("Not connected")
+        if not self._connected:
+            raise pyodbc.ProgrammingError("Not connected")
         if writeCallback is None:
             if self.csvIsDefault:
                 writeCallback = csvWriteCallback
-            else: writeCallback = pandasWriteCallback
-        odbc = self.odbc; self.odbc = None
+            else:
+                writeCallback = pandasWriteCallback
+        odbc = self.odbc
+        self.odbc = None
         try:
             srv = TunneledTCPServer(self.serverAddress, HTTPIOHandler)
-            srv.pipeInFd, srv.pipeOutFd = os.pipe(); srv.outputMode = False
-            srv.doneEvent = Event(); srv.startedEvent = Event()
-            srv.error, srv.pipeIn, srv.pipeOut = None, os.fdopen(srv.pipeInFd), os.fdopen(srv.pipeOutFd, 'w')
-            s = HTTPIOServerThread();    s.srv = srv; srv.serverThread = s
-            q = HTTPImportQueryThread(); q.srv = srv; srv.queryThread = q
+            srv.pipeInFd, srv.pipeOutFd = os.pipe()
+            srv.outputMode = False
+            srv.doneEvent = threading.Event()
+            srv.startedEvent = threading.Event()
+            srv.error = None
+            srv.pipeIn, srv.pipeOut = os.fdopen(srv.pipeInFd), os.fdopen(srv.pipeOutFd, 'w')
+            s = HTTPIOServerThread()
+            s.srv = srv
+            srv.serverThread = s
+            q = HTTPImportQueryThread()
+            q.srv = srv
+            srv.queryThread = q
             q.tableName = self._q(table, quotedIdentifiers)
             q.columnNames = None
             if columnNames is not None:
                 q.columnNames = [self._q(c, quotedIdentifiers) for c in columnNames]
             q.odbc = odbc
-            s.start(); q.start()
-            if 'columnNames' in kw: del kw['columnNames']
-            if 'quotedIdentifiers' in kw: del kw['quotedIdentifiers']
-            if 'writeCallback' in kw: del kw['writeCallback']
-
+            s.start()
+            q.start()
+            for k in ('columnNames', 'quotedIdentifiers', 'writeCallback'):
+                if k in kw:
+                    del kw[k]
             try:
                 try:
                     while not srv.startedEvent.wait(1):
                         if srv.error is not None:
                             srv.doneEvent.set()
                             raise RuntimeError("Server error")
-                    ret = writeCallback(data, srv.pipeOut, **kw)
-                except Exception, err:
+                    writeCallback(data, srv.pipeOut, **kw)
+                except Exception as err:
                     if srv.error is not None:
                         raise srv.error
-                    #traceback.print_exc()
-                    try: srv.pipeIn.close()
-                    except: pass
                     raise err
             finally:
-                try: srv.pipeOut.close()
-                except: pass
+                try:
+                    srv.pipeOut.close()
+                except:
+                    pass
                 srv.doneEvent.wait()
                 srv.server_close()
                 s.join()
                 q.join()
-        finally: self.odbc = odbc
+        finally:
+            self.odbc = odbc
         if srv.error is not None:
             raise srv.error
-        return ret
 
     def writeCSV(self, *args, **kw):
         """Shortcut to writeData(..., writeCallback = csvWriteCallback)"""
@@ -673,16 +789,16 @@ but has the following additions:
         return self.writeData(*args, **kw)
 
     def createScript(self,
-                     name = None,
-                     env = None,
-                     initFunction = None,
-                     cleanFunction = None,
-                     replaceScript = True,
-                     quotedIdentifiers = False,
-                     inType = SET,
-                     inArgs = [],
-                     outType = EMITS,
-                     outArgs = []):
+                     name=None,
+                     env=None,
+                     initFunction=None,
+                     cleanFunction=None,
+                     replaceScript=True,
+                     quotedIdentifiers=False,
+                     inType=SET,
+                     inArgs=None,
+                     outType=EMITS,
+                     outArgs=None):
         """Converts a Python function to EXASolution UDF script
 
         This function decorator converts a regular python function to
@@ -759,7 +875,7 @@ but has the following additions:
               where = None,              # the WHERE part of SQL
               groupBy = None,            # the GROUP BY part of SQL
               restQuery = '',            # rest of the QUERY (e.g. ORDER BY)
-              quotedIdentifiers = False,
+              quotedIdentifiers = False,/
               returnSQL = False,         # on execute return only the SQL text
               **kw)                      # keywords to pass to readData
 
@@ -769,30 +885,41 @@ but has the following additions:
         format as with readData.
 
         """
-        if sys.version_info < (2,7) or sys.version_info >= (2,8):
-            raise RuntimeError('createScript requires Python 2.7')
-        if not self._connected: raise pyodbc.ProgrammingError("Not connected")
+        if sys.version_info[0:2] != expected_version:
+            raise RuntimeError('createScript requires Python %s'.format('.'.join(map(str, expected_version))))
+        if inArgs is None:
+            inArgs = []
+        if outArgs is None:
+            outArgs = []
+        if not self._connected:
+            raise pyodbc.ProgrammingError("Not connected")
         qi = quotedIdentifiers
+
         def createPythonScript(function):
             if name is None:
                 if self.scriptSchema is None:
-                    scriptName = function.func_name
-                else: scriptName = "%s.%s" % (self.scriptSchema,
-                                              function.func_name)
-            else: scriptName = name
-            if qi: scriptName = '"%s"' % scriptName
-            scriptCode = ["# AUTO GENERATED CODE FROM EXASOLUTION PYTHON PACKAGE"]
-            scriptCode.append("import marshal, types, sys, socket, time, zlib")
-            if env != None:
-                scriptCode.append("env = marshal.loads(zlib.decompress(%s))" % \
-                                  repr(zlib.compress(marshal.dumps(env), 9)))
-            scriptCode.append("run = types.FunctionType(marshal.loads(zlib.decompress(%s)), globals(), %s)" % \
-                              (repr(zlib.compress(marshal.dumps(function.func_code), 9)),
-                               repr(function.func_name)))
+                    scriptName = get_func_name(function)
+                else:
+                    scriptName = "%s.%s" % (self.scriptSchema,
+                                            get_func_name(function))
+            else:
+                scriptName = name
+            if qi:
+                scriptName = '"%s"' % scriptName
+            scriptCode = ["# AUTO GENERATED CODE FROM EXASOLUTION PYTHON PACKAGE",
+                          "import marshal, types, sys, socket, time, zlib"]
+            if env is not None:
+                scriptCode.append("env = marshal.loads(zlib.decompress(%s))" %
+                                  repr(zlib.compress(str(marshal.dumps(env), 9))).encode('utf-8'))
+            code_str = repr(zlib.compress(marshal.dumps(get_func_code(function)), 9))
+            scriptCode.append("run = types.FunctionType(marshal.loads(zlib.decompress((%s))), globals(), %s)" %
+                              (code_str,
+                               repr(get_func_name(function))))
             if cleanFunction is not None:
-                scriptCode.append("cleanup = types.FunctionType(marshal.loads(zlib.decompress(%s)), globals(), %s)" % \
-                                  (repr(zlib.compress(marshal.dumps(cleanFunction.func_code), 9)),
-                                   repr(cleanFunction.func_name)))
+                code_str = repr(zlib.compress(str(marshal.dumps(get_func_code(cleanFunction))), 9))
+                scriptCode.append("cleanup = types.FunctionType(marshal.loads(zlib.decompress(%s)), globals(), %s)" %
+                                  (code_str,
+                                   repr(get_func_name(cleanFunction))))
 
             if self._outputService is not None or self.externalClient:
                 serverAddress = self.clientAddress
@@ -804,15 +931,17 @@ class activate_remote_output:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect(address)
         sys.stdout = sys.stderr = self
-    def write(self, data): return self.s.sendall(data)
-    def close(self): self.s.close()
+    def write(self, data):
+        return self.s.sendall(data)
+    def close(self):
+        self.s.close()
 activate_remote_output(%s)""" % repr(serverAddress))
 
             if initFunction is not None:
-                scriptCode.append("types.FunctionType(marshal.loads(%s), globals(), %s)()" % \
-                                  (repr(marshal.dumps(initFunction.func_code)),
-                                   repr(initFunction.func_name)))
-            scriptCode = "\n".join(scriptCode)
+                scriptCode.append("types.FunctionType(marshal.loads(%s), globals(), %s)()" %
+                                  (repr(marshal.dumps(get_func_code(initFunction))),
+                                   repr(get_func_name(initFunction))))
+            scriptCode = '\n'.join(scriptCode)
             scriptReplace = ""
             if replaceScript:
                 scriptReplace = "OR REPLACE"
@@ -821,11 +950,10 @@ activate_remote_output(%s)""" % repr(serverAddress))
                 scriptInType = "SCALAR"
 
             if not isinstance(inArgs, basestring):
-                scriptInArgs = []
-                for n,t in inArgs:
-                    scriptInArgs.append("%s %s" % (self._q(n, qi), t))
-                scriptInArgs = ", ".join(scriptInArgs)
-            else: scriptInArgs = inArgs
+                scriptInArgs = ["%s %s" % (self._q(n, qi), t) for n, t in inArgs]
+                scriptInArgs = ', '.join(scriptInArgs)
+            else:
+                scriptInArgs = inArgs
 
             if outType == RETURNS:
                 if not isinstance(outArgs, basestring):
@@ -833,13 +961,12 @@ activate_remote_output(%s)""" % repr(serverAddress))
                 scriptOutArgs = outArgs
             else:
                 if not isinstance(outArgs, basestring):
-                    scriptOutArgs = []
-                    for n,t in outArgs:
-                        scriptOutArgs.append("%s %s" % (self._q(n, qi), t))
-                    if len(scriptOutArgs) == 0:
-                        raise RuntimeError("One or more output arguments required")
+                    scriptOutArgs = ["%s %s" % (self._q(n, qi), t) for n, t in outArgs]
                     scriptOutArgs = '(' + ", ".join(scriptOutArgs) + ')'
-                else: scriptOutArgs = '(' + outArgs + ')'
+                else:
+                    scriptOutArgs = '(' + outArgs + ')'
+                if len(scriptOutArgs) == 2:  # just empty brackets
+                    raise RuntimeError("One or more output arguments required")
 
             scriptOutType = "EMITS"
             if outType == RETURNS:
@@ -851,7 +978,10 @@ activate_remote_output(%s)""" % repr(serverAddress))
             def f(*args, **kw):
                 if not self._connected:
                     raise pyodbc.ProgrammingError("Not connected")
-                table = kw['table']
+                try:
+                    table = kw['table']
+                except KeyError:
+                    raise TypeError('no table name provided, a table name must be provided as keyword argument')
                 where = kw.get('where', None)
                 groupBy = kw.get('groupBy', None)
                 restQuery = kw.get('restQuery', '')
@@ -860,9 +990,7 @@ activate_remote_output(%s)""" % repr(serverAddress))
                 for k in ('table', 'where', 'groupBy', 'restQuery', 'quotedIdentifiers', 'returnSQL'):
                     if k in kw:
                         del kw[k]
-                funargs = []
-                for n in args:
-                    funargs.append(self._q(n, qis))
+                funargs = [self._q(n, qis) for n in args]
                 whereSQL = ""
                 if where:
                     whereSQL = "WHERE %s" % where
@@ -871,9 +999,10 @@ activate_remote_output(%s)""" % repr(serverAddress))
                     groupBySQL = "GROUP BY %s" % self._q(groupBy, qis)
                 code = "SELECT * FROM (SELECT %s(%s) FROM %s %s %s) %s" % \
                        (scriptName, ", ".join(funargs), self._q(table, qis), whereSQL, groupBySQL, str(restQuery))
-                if returnSQL: return '(%s)' % code
+                if returnSQL:
+                    return '(%s)' % code
                 return self.readData(code, **kw)
-            f.func_name = function.func_name
+            set_func_name(f, get_func_name(function))
             return f
         return createPythonScript
 
@@ -883,8 +1012,11 @@ activate_remote_output(%s)""" % repr(serverAddress))
         if not self._connected:
             raise pyodbc.ProgrammingError("Not connected")
         self._connected = False
-        try: self.odbc.close()
-        finally: self._stopOutputService()
+        try:
+            self.odbc.close()
+        finally:
+            self._stopOutputService()
+
 
 def outputService():
     """Start a standalone output service
@@ -893,11 +1025,13 @@ def outputService():
     Python instances the connection parameter externalClient need to
     be specified.
     """
-    try: host = socket.gethostbyname(socket.gethostname())
-    except: host = '0.0.0.0'
+    try:
+        host = socket.gethostbyname(socket.gethostname())
+    except:
+        host = '0.0.0.0'
 
     from optparse import OptionParser
-    parser = OptionParser(description =
+    parser = OptionParser(description=
                           """This script binds to IP and port and outputs everything it gets from
                           the connections to stdout with all lines prefixed with client address.""")
     parser.add_option("-s", "--server", dest="server", metavar="SERVER", type="string",
@@ -905,7 +1039,6 @@ def outputService():
                       help="hostname or IP address to bind to (default: %default)")
     parser.add_option("-p", "--port", dest="port", metavar="PORT", type="int", default=3000,
                       help="port number to bind to (default: %default)")
-    #(options, args) = parser.parse_args()
     options = parser.parse_args()[0]
     address = options.server, options.port
     sys.stdout.flush()
@@ -914,12 +1047,14 @@ def outputService():
     server.fileObject = sys.stdout
     server.finished = False
     server.init()
-    print ">>> bind the output server to %s:%d" % server.serverAddress
+    print(">>> bind the output server to %s:%d" % server.serverAddress)
     sys.stdout.flush()
-    try: server.run()
+    try:
+        server.run()
     except KeyboardInterrupt:
         sys.stdout.flush()
     sys.exit(0)
+
 
 if __name__ == '__main__':
     outputService()

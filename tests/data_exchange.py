@@ -1,5 +1,6 @@
-'''Test of executeSQL with CSV'''
+"""Test of executeSQL with CSV"""
 
+import sys
 import operator
 import os
 import socket
@@ -12,12 +13,16 @@ import pandas
 
 import exasol
 
+if sys.version_info[0] == 3:
+    from functools import reduce
+
+
 class TestCase(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
         self.odbc_kwargs = {
-                #'DSN': 'EXAODBC_TEST',
+                #'DSN':'EXAODBC_TEST',
                 'Driver': 'EXAODBC',
                 'EXAHOST': os.environ['ODBC_HOST'],
                 'EXAUID': os.environ['EXAUSER'],
@@ -31,7 +36,7 @@ class TestCase(unittest.TestCase):
             crs.execute('CREATE SCHEMA IF NOT EXISTS exasol_travis_python')
             crs.execute('DROP TABLE IF EXISTS data_exchange_table')
             crs.execute('CREATE TABLE data_exchange_table (decimal1 DECIMAL)')
-            for i in range(0, 50):
+            for _ in range(0, 50):
                 rdm = random.random()
                 crs.execute('INSERT INTO data_exchange_table VALUES {}'.format(rdm))
             crs.commit()
@@ -90,7 +95,7 @@ class CSVTest(TestCase):
             sum_ = crs.fetchone()[0]
             rows = ecn.readCSV('SELECT decimal1 FROM exasol_travis_python.data_exchange_table')
         self.assertEqual(sum_,
-                reduce(operator.add, [Decimal(row[0]) for row in rows if len(row)]))
+                         reduce(operator.add, [Decimal(row[0]) for row in rows if len(row)]))
 
     def test_writeCSV_works(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
@@ -98,7 +103,7 @@ class CSVTest(TestCase):
             c.execute('OPEN SCHEMA exasol_travis_python')
             c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
-            ecn.writeCSV([[1,2], [3, 4]], 'T')
+            ecn.writeCSV([[1, 2], [3, 4]], 'T')
 
             rows = c.execute('SELECT * FROM exasol_travis_python.t').fetchall()
             self.assertEqual(2, len(rows))
@@ -137,7 +142,7 @@ class PandasTest(TestCase):
             c.execute('CREATE TABLE T (x INT, y VARCHAR(10))')
 
             # numpy arrays are transposed:
-            data = pandas.DataFrame({1: [1,2], 2: ["a","b"]})
+            data = pandas.DataFrame({1: [1, 2], 2: ["a", "b"]})
             ecn.writePandas(data, 'T')
 
             rows = c.execute('SELECT * FROM exasol_travis_python.t').fetchall()
@@ -164,7 +169,7 @@ class DefaultsTest(TestCase):
     def test_readData_overwrite_default(self):
         with exasol.connect(**self.odbc_kwargs) as ecn:
             rows = ecn.readData('SELECT * FROM dual',
-                    readCallback=exasol.csvReadCallback)
+                                readCallback=exasol.csvReadCallback)
             self.assertIsInstance(rows, list, rows.__class__)
 
     def test_writeData_defaults_to_pandas(self):
@@ -174,9 +179,8 @@ class DefaultsTest(TestCase):
             c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
 
-            #with self.assertRaisesRegexp(AttributeError, r"object has no attribute 'to_csv'"):
             with self.assertRaises(TypeError):
-                ecn.writeData([[1,2], [3, 4]], 'T')
+                ecn.writeData([[1, 2], [3, 4]], 'T')
             c.execute('DROP TABLE exasol_travis_python.t')
 
     def test_writeData_set_default_with_connect(self):
@@ -186,7 +190,7 @@ class DefaultsTest(TestCase):
             c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
 
-            ecn.writeData([[1,2], [3, 4]], 'T')
+            ecn.writeData([[1, 2], [3, 4]], 'T')
             c.execute('DROP TABLE T')
 
     def test_writeData_overwrite_default(self):
@@ -196,12 +200,12 @@ class DefaultsTest(TestCase):
             c.execute('DROP TABLE IF EXISTS T')
             c.execute('CREATE TABLE T (x INT, y INT)')
 
-            ecn.writeData([[1,2], [3, 4]], 'T',
-                    writeCallback=exasol.csvWriteCallback)
+            ecn.writeData([[1, 2], [3, 4]], 'T',
+                          writeCallback=exasol.csvWriteCallback)
             c.execute('DROP TABLE T')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
 
 # vim: ts=4:sts=4:sw=4:et:fdm=indent
-

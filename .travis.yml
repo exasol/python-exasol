@@ -2,6 +2,14 @@ language: python
 
 python:
     - 2.7
+    - 3.5
+    - 3.6
+
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      sudo: true
 
 sudo: required
 
@@ -65,11 +73,12 @@ install:
     - ./$EXAODBC/config_odbc --mode=config --host=$EXAHOST --user=$EXAUSER --password=$EXAPW
     
     # install py sdk
-    - python setup.py install --prefix=$HOME/exa_py
+    - python setup.py install
 
 script:
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/selftest.py
-    - PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/data_exchange.py
+    - python tests/selftest.py
+    - python tests/data_exchange.py
+    - python tests/udf_sdk.py
     
     # udf sdk test and pylint deactivated due to privilege of trail account and toolbox
     #- PYTHONPATH=$HOME/exa_py/lib/python2.7/site-packages python tests/udf_sdk.py
