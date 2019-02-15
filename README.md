@@ -1,8 +1,11 @@
 
-###### Exasol recommends using [PyEXASOL](https://github.com/EXASOL/pyexasol) unless you need functionality specifically available in this package
+### Exasol recommends using [PyEXASOL](https://github.com/EXASOL/pyexasol)
+### This package is deprecated. No futher funtionalities will be added.
 
 
-# EXASolution Python Package
+
+
+# EXASolution Python Package (deprecated)
 
 [![Build Status](https://travis-ci.org/EXASOL/python-exasol.svg)](https://travis-ci.org/EXASOL/python-exasol)
 
