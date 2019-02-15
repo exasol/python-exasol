@@ -1,8 +1,8 @@
 
 ### Exasol recommends using [PyEXASOL](https://github.com/EXASOL/pyexasol)
-### This package is deprecated. No futher funtionalities will be added.
+### This package is deprecated. No futher functionalities will be added.
 
-
+---
 
 
 # EXASolution Python Package (deprecated)
