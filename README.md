@@ -46,6 +46,7 @@ extends PyODBC in two main aspects:
 ```
 pip install pyodbc
 ```
+If you're running in a Jupyter notebook, you can install packages by adding an `!` in front of the pip statement.
 
 4. Install a recent version of the Pandas package.
 ```
@@ -83,6 +84,8 @@ Fill out the given form (see picture). Remember the name you give to your dataso
 ```
 pip install pyodbc
 ```
+If you're running in a Jupyter notebook, you can install packages by adding an `!` in front of the pip statement.
+
 
 3. Install a recent version of the Pandas package.
 ```
