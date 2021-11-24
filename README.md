@@ -1,3 +1,4 @@
+*This project is no longer actively maintained and therefore archived.*
 
 ### Exasol recommends using [PyEXASOL](https://github.com/EXASOL/pyexasol)
 ### This package is deprecated. No futher functionalities will be added.
